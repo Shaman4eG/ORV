@@ -2,11 +2,6 @@
 #include <fcntl.h>
 #include "header.h"
 
-void error(const char *msg){
-  perror(msg);
-  exit(EXIT_FAILURE);
-}
-
 void closeUnsuedPipes(FILE *flog, childPipe *cp, int count, int id) {
   for(int i = 0; i < count; i++) {//TODO another function
     if(i != id) {
@@ -65,6 +60,37 @@ void closeUsedPipes(FILE *flog, childPipe *cp, int id) {
     free(cp->pipes);
 }
 
+
+void createPipes(size_t pipesCount, childPipe* procPipes, FILE *flog, size_t procCount)
+{
+	int inFD[2];
+	int outFD[2];
+	int n = 0;
+	int k = 1;
+
+	for (int i = pipesCount - 1; i >= 0; i--)
+	{
+		pipe(inFD);
+		pipe(outFD);
+
+		procPipes[k].pipes[n].in = outFD[0];
+		procPipes[k].pipes[n].out = inFD[1];
+		procPipes[n].pipes[k].in = inFD[0];
+		procPipes[n].pipes[k].out = outFD[1];
+
+		fprintf(flog, LogPipeOpenFmt, (unsigned)time(NULL), n, k, outFD[0], outFD[1]);
+		fprintf(flog, LogPipeOpenFmt, (unsigned)time(NULL), k, n, inFD[0], inFD[1]);
+
+		k++;
+
+		if (k >= procCount)
+		{
+			n++;
+			k = n + 1;
+		}
+	}
+}
+
 int main(int argc, char *argv[]) {
 
 	size_t procCount = atoi(argv[2]) + 1;
@@ -79,69 +105,26 @@ int main(int argc, char *argv[]) {
 	{
 		pipesCount += i;
 	}
-
-	childPipe* procPipes = malloc(procCount * sizeof(childPipe));
-	for (size_t i = 0; i < procCount; i++)
+	
+	childPipe* procPipes = malloc(sizeof(childPipe) * procCount);
+	for (size_t i = procCount - 1; i >= 0; i--)
 	{
-		procPipes[i].pipes = malloc(procCount * sizeof(pipeDesc));
 		procPipes[i].count = procCount;
+		procPipes[i].pipes = malloc(procCount * sizeof(pipeDesc));
 	}
 
-	int n = 0;
-	int k = n + 1;
-	int inFD[2], outFD[2];
-	//size_t base = pipesCount - (procCount - 1);
-	printf("pipesCount %zu\n", pipesCount);
-	for (int i = 0; i < pipesCount; i++) {
+	createPipes(pipesCount, procPipes, flog, procCount);
 
-		if (pipe(inFD) < 0 || pipe(outFD) < 0)
-			error("child pipe call error");
-
-		//fcntl(inFD[i][0], F_SETFL, O_NONBLOCK);
-		//fcntl(inFD[i][1], F_SETFL, O_NONBLOCK);
-		//fcntl(outFD[i][0], F_SETFL, O_NONBLOCK);
-		//fcntl(outFD[i][1], F_SETFL, O_NONBLOCK);
-		//0 - read
-		//1 - write
-		procPipes[n].pipes[k].in = inFD[0];
-		procPipes[n].pipes[k].out = outFD[1];
-		procPipes[k].pipes[n].in = outFD[0];
-		procPipes[k].pipes[n].out = inFD[1];
-		printf("%d in %d to %d out %d\n", n, inFD[0], k, outFD[1]);
-		printf("%d in %d to %d out %d\n", k, outFD[0], n, inFD[1]);
-
-		fprintf(flog, LogPipeOpenFmt, (unsigned)time(NULL), n, k, outFD[0], outFD[1]);
-		fprintf(flog, LogPipeOpenFmt, (unsigned)time(NULL), k, n, inFD[0], inFD[1]);
-
-		k++;
-
-		if (k >= procCount) {
-			n++;
-			k = n + 1;
-		}
-	}
-
-	//for(int i = 0; i < procCount - 1; i++) {
-	//  if(pipe(inFD[base + i]) < 0)
-	//      error("parent pipe call error");
-	//  procPipes[PARENT_ID].pipes[i + 1].in  = inFD[base + i][0];
-	//  procPipes[i + 1].pipes[PARENT_ID].out = inFD[base + i][1];
-	//  procPipes[i + 1].pipes[PARENT_ID].in  = -1;
-	//  procPipes[PARENT_ID].pipes[i + 1].out = -1;
-
-	//  fprintf(flog, LogPipeOpenFmt, (unsigned)time(NULL), PARENT_ID, i + 1, inFD[base + i][0], inFD[base + i][1]);
-	//}
-
-	for (int i = 0; i < procCount; i++) {
-		procPipes[i].pipes[i].in = -1;
+	for (int i = procCount - 1; i >= 0; i--) 
+	{
 		procPipes[i].pipes[i].out = -1;
+		procPipes[i].pipes[i].in = -1;
 	}
 	//=============================================================
 
 	pid_t pid;
 	for (int i = 1; i < procCount; i++) 
 	{
-		//printf("loop iteration %d\n", i);
 		pid = fork ();
 		if (pid == 0) 
 		{
