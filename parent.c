@@ -2,42 +2,48 @@
 #include <fcntl.h>
 #include "header.h"
 
-void closeUnsuedPipes(FILE *flog, childPipe *cp, int count, int id) {
-  for(int i = 0; i < count; i++) {//TODO another function
-    if(i != id) {
-      for(int j = 0; j < cp[i].count; j++){
-        if (cp[i].pipes[j].in != -1) {
-          if(close(cp[i].pipes[j].in) == -1)
-            fprintf(flog, LogUnusedPipeReadErrorCloseFmt, (unsigned)time(NULL), i, cp[i].pipes[j].in, j, strerror(errno));
-          else
-            fprintf(flog, LogUnusedPipeReadCloseFmt, (unsigned)time(NULL), i, cp[i].pipes[j].in, j);
-        }
+void closeUnsuedPipes(int id, int count, FILE *flog, int extraCounter, childPipe *cp)
+{
+	for (int i = 0; i < count; i++) 
+	{
+		if (i == id) continue;
+		else
+		{
+			for (int j = 0; j < cp[i].count; j++)
+			{
+				realCloseUnusedPipes(cp, i, j, flog);
+			}
+		}
+	}
 
-        if (cp[i].pipes[j].out != -1) {
-          if(close(cp[i].pipes[j].out) == -1)
-            fprintf(flog, LogUnusedPipeWriteErrorCloseFmt, (unsigned)time(NULL), i, cp[i].pipes[j].out, i, strerror(errno));
-          else
-            fprintf(flog, LogUnusedPipeWriteCloseFmt, (unsigned)time(NULL), i, cp[i].pipes[j].out, i);
-        }
-      }
-    }
-  }
+	freeUnusedPipesMemory(count, cp, id);
+}
 
-  //for (int j = 0; j < count; j++) {
-  //  if (cp[PARENT_ID].pipes[j].out != -1) {
-  //    if(close(cp[PARENT_ID].pipes[j].out) == -1)
-  //      fprintf(flog, LogUnusedPipeWriteErrorCloseFmt, (unsigned)time(NULL), PARENT_ID, cp[PARENT_ID].pipes[j].out, j, strerror(errno));
-  //    else
-  //      fprintf(flog, LogUnusedPipeWriteCloseFmt, (unsigned)time(NULL), PARENT_ID, cp[PARENT_ID].pipes[j].out, j);
-  //  }
+void realCloseUnusedPipes(childPipe *cp, int i, int j, FILE *flog)
+{
+	if (cp[i].pipes[j].out != -1)
+	{
+		if (close(cp[i].pipes[j].out) == -1)
+			fprintf(flog, LogUnusedPipeWriteErrorCloseFmt, (unsigned)time(NULL), i, cp[i].pipes[j].out, i, strerror(errno));
+		else
+			fprintf(flog, LogUnusedPipeWriteCloseFmt, (unsigned)time(NULL), i, cp[i].pipes[j].out, i);
+	}
+	if (cp[i].pipes[j].in != -1)
+	{
+		if (close(cp[i].pipes[j].in) == -1)
+			fprintf(flog, LogUnusedPipeReadErrorCloseFmt, (unsigned)time(NULL), i, cp[i].pipes[j].in, j, strerror(errno));
+		else
+			fprintf(flog, LogUnusedPipeReadCloseFmt, (unsigned)time(NULL), i, cp[i].pipes[j].in, j);
+	}
+}
 
-  //}
-
-
-  for(int i = 1; i < count; i++) {
-    if (i != id)
-      free(cp[i].pipes);
-  }
+void freeUnusedPipesMemory(int count, childPipe *cp, int id)
+{
+	for (int i = count - 1; i >= 1; i--)
+	{
+		if (i == id) continue;
+		else free(cp[i].pipes);
+	}
 }
 
 void closeUsedPipes(FILE *flog, childPipe *cp, int id) {
@@ -60,6 +66,26 @@ void closeUsedPipes(FILE *flog, childPipe *cp, int id) {
     free(cp->pipes);
 }
 
+void doForks(childPipe *procPipes, int procCount, FILE *flog, FILE *ef)
+{
+	pid_t pid;
+	for (int i = procCount - 1; i >= 1; i--)
+	{
+		pid = fork();
+		if (pid == 0)
+		{
+			closeUnsuedPipes(i, procCount, flog, 3, procPipes);
+			child(i, &procPipes[i], flog, ef);
+			exit(EXIT_SUCCESS);
+		}
+	}
+}
+
+void doForkWithExtra(childPipe *procPipes, int procCount, FILE *flog, FILE *ef)
+{
+	doForks(procPipes, procCount, flog, ef);
+	closeUnsuedPipes(PARENT_ID, procCount, flog, 12, procPipes);
+}
 
 void createPipes(size_t pipesCount, childPipe* procPipes, FILE *flog, size_t procCount)
 {
@@ -92,7 +118,7 @@ void createPipes(size_t pipesCount, childPipe* procPipes, FILE *flog, size_t pro
 }
 
 int main(int argc, char *argv[]) {
-
+	/*
 	size_t procCount = atoi(argv[2]) + 1;
 
 	FILE *ef = fopen(events_log, "a");
@@ -121,24 +147,9 @@ int main(int argc, char *argv[]) {
 		procPipes[i].pipes[i].in = -1;
 	}
 	//=============================================================
+	*/
+	doForkWithExtra(procPipes, procCount, flog, ef);
 
-	pid_t pid;
-	for (int i = 1; i < procCount; i++) 
-	{
-		pid = fork ();
-		if (pid == 0) 
-		{
-			closeUnsuedPipes(flog, procPipes, procCount, i);
-			if (child(i, &procPipes[i], flog, ef) == -1)
-			error("child");
-			else
-			exit(EXIT_SUCCESS);
-		}
-		else if (pid == -1)
-			error("fork error");
-	}
-
-	closeUnsuedPipes(flog, procPipes, procCount, PARENT_ID);
 	int rcvDone = 0;
 
 	if(receiveAll(&procPipes[0], procCount - 1, STARTED, &rcvDone) == -1)
