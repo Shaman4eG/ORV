@@ -118,7 +118,6 @@ void createPipes(size_t pipesCount, childPipe* procPipes, FILE *flog, size_t pro
 }
 
 int main(int argc, char *argv[]) {
-	/*
 	size_t procCount = atoi(argv[2]) + 1;
 
 	FILE *ef = fopen(events_log, "a");
@@ -147,7 +146,7 @@ int main(int argc, char *argv[]) {
 		procPipes[i].pipes[i].in = -1;
 	}
 	//=============================================================
-	*/
+
 	doForkWithExtra(procPipes, procCount, flog, ef);
 
 	int rcvDone = 0;
