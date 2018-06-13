@@ -134,33 +134,7 @@ childPipe* createPipes(FILE *flog, size_t procCount)
 
 int main(int argc, char *argv[]) {
 
-	size_t procCount = 0;
-
-	if(argc != 3) {
-		fprintf(stderr,"%s error: not enough arguments\n", argv[0]);
-		exit(EXIT_FAILURE);
-	}
-
-	if (argv[1][0] == '-') 
-	{
-		int num;
-		switch(argv[1][1])
-		{
-			case 'p':
-				num = atoi(argv[2]);
-				if (num <= 0)
-				{
-					fprintf(stderr, "%s error: %d is an invalid number of processes\n", argv[0], num);
-					exit(EXIT_FAILURE);
-				}
-				procCount = num + 1;
-				break;
-
-			default:
-				fprintf(stderr, "Usage: %s -p processes_count\n", argv[0]);
-				exit(EXIT_FAILURE);
-		}
-	}
+	size_t procCount = atoi(argv[2]) + 1;
 
 	FILE *flog;
 	flog = fopen(pipes_log, "a");
