@@ -13,70 +13,73 @@ Message *generateMsg(MessageType msgType, const char* payload, int payloadLength
 	  return msg;
 }
 
-int child(int id, Process *pipesList, FILE *flog, FILE *ef) {
+int CheckStartedMsg(int id, pid_t pid, pid_t parentPid, Process *process, FILE *EventsLoggingFile)
+{
+	char messageStarted[49];
+	int length = sprintf(messageStarted, log_started_fmt, id, pid, parentPid);
+	if (length < 0)	return -1;
+	
+	const Message *msg = generateMsg(STARTED, messageStarted, length);
 
-  if (ef == NULL) {
-    perror("events.log file open error");
-    return -1;
-  }
-  pid_t pid = getpid();
-  pid_t ppid = getppid();
-  int rcvDone = 0;
+	// Sending
+	if (send_multicast(pipesList, msg) == -1) 
+		return -1;
 
+	eventLog(EventsLoggingFile, log_started_fmt, id, pid, parentPid);
 
-  char messageStarted[49];
-  int length = sprintf(messageStarted, log_started_fmt, id, pid, ppid );
-  if (length < 0) {
-    perror("sprintf error");
-    return -1;
-  }
-  const Message *msg = generateMsg(STARTED, messageStarted, length);
-  //printf("%zu\n", pipesList->count);
-  //printf("%d\n", pipesList->pipes[0].out);
+	free((char*)msg);
 
-  if(send_multicast(pipesList, msg) == -1) {
-   perror("send_multicast error");
-   return -1;
-  }
-  //printf("here7\n");
-  eventLog(ef, log_started_fmt, id, pid, ppid);
-  free((char *)msg);
+	// Recieving
+	if (receiveAll(process, process->count - 2, STARTED, &rcvDone) == -1) 
+		return -1;
 
-  if (receiveAll(pipesList, pipesList->count -2, STARTED, &rcvDone) == -1){
-    perror("receiveAll Started child");
-    return -1;
-  }
-  //if(rcvCount != pipesList->count - 2) {
-  // perror("received count is wrog");
-  // return -1;
-  //}
-  eventLog(ef, log_received_all_started_fmt, id);
-  char messageDone[29];
-  length = sprintf(messageDone, log_done_fmt, id);
-  if(length < 0) {
-    perror("sprintf done error");
-    return -1;
-  }
-  msg = generateMsg(DONE, messageDone, length);
+	eventLog(EventsLoggingFile, log_received_all_started_fmt, id);
 
-  if(send_multicast(pipesList, msg) == -1) {
-    perror("send done error");
-    return -1;
-  }
-  eventLog(ef, log_done_fmt, id);
+	return 0;
+}
 
-  if(receiveAll(pipesList, pipesList->count - 2 - rcvDone, DONE,  &rcvDone) == -1) {
-    perror("receiveAll Done child");
-    return -1;
-  }
+int CheckDoneMsg(int id, Process *process, FILE *EventsLoggingFile)
+{
+	int rcvDone = 0;
+	char messageDone[29];
+	int length = sprintf(messageDone, log_done_fmt, id);
+	if (length < 0) 
+		return -1;
 
-  //if(rcvCount != pipesList->count - 2)
-  //  error("received count is wrog");
-  eventLog(ef, log_received_all_done_fmt, id);
-  closeUsedPipes(id, pipesList, flog);
+	const Message *msg = generateMsg(DONE, messageDone, length);
 
-  free((char *)msg);
-  fclose(ef);
-  fclose(flog);
-  return 0;
+	//sending
+	if (send_multicast(process, msg) == -1) 
+		return -1;
+	
+	eventLog(EventsLoggingFile, log_done_fmt, id);
+
+	//recieving
+	if (receiveAll(process, process->count - 2 - rcvDone, DONE, &rcvDone) == -1) 
+		return -1;
+
+	eventLog(EventsLoggingFile, log_received_all_done_fmt, id);
+	
+	free((char*)msg);
+}
+
+int child(int id, Process *process, FILE *LoggingFile, FILE *EventsLoggingFile) 
+{
+	if (EventsLoggingFile == NULL) 
+		return -1;
+	
+	pid_t pid = getpid();
+	pid_t parentPid = getppid();
+
+	if (CheckStartedMsg(id, pid, parentPid, process, EventsLoggingFile) == -1)
+		return -1;
+
+	if (CheckDoneMsg(id, process, EventsLoggingFile) == -1)
+		return -1;
+
+	closeUsedPipes(id, process, LoggingFile);
+
+	fclose(EventsLoggingFile);
+	fclose(LoggingFile);
+	return 0;
 }
