@@ -2,23 +2,6 @@
 #include <fcntl.h>
 #include "header.h"
 
-void closeUnsuedPipes(int id, int count, FILE *flog, int extraCounter, childPipe *cp)
-{
-	for (int i = 0; i < count; i++) 
-	{
-		if (i == id) continue;
-		else
-		{
-			for (int j = 0; j < cp[i].count; j++)
-			{
-				realCloseUnusedPipes(cp, i, j, flog);
-			}
-		}
-	}
-
-	freeUnusedPipesMemory(count, cp, id);
-}
-
 void realCloseUnusedPipes(childPipe *cp, int i, int j, FILE *flog)
 {
 	if (cp[i].pipes[j].out != -1)
@@ -44,6 +27,23 @@ void freeUnusedPipesMemory(int count, childPipe *cp, int id)
 		if (i == id) continue;
 		else free(cp[i].pipes);
 	}
+}
+
+void closeUnsuedPipes(int id, int count, FILE *flog, int extraCounter, childPipe *cp)
+{
+	for (int i = 0; i < count; i++) 
+	{
+		if (i == id) continue;
+		else
+		{
+			for (int j = 0; j < cp[i].count; j++)
+			{
+				realCloseUnusedPipes(cp, i, j, flog);
+			}
+		}
+	}
+
+	freeUnusedPipesMemory(count, cp, id);
 }
 
 void closeUsedPipes(FILE *flog, childPipe *cp, int id) {
@@ -132,7 +132,7 @@ int main(int argc, char *argv[]) {
 	}
 	
 	childPipe* procPipes = malloc(sizeof(childPipe) * procCount);
-	for (size_t i = procCount - 1; i >= 0; i--)
+	for (size_t i = procCount - 1; i > -1; i--)
 	{
 		procPipes[i].count = procCount;
 		procPipes[i].pipes = malloc(procCount * sizeof(pipeDesc));
