@@ -117,6 +117,17 @@ void createPipes(size_t pipesCount, childPipe* procPipes, FILE *flog, size_t pro
 	}
 }
 
+void recieveAllAndLog(childPipe* procPipes, size_t procCount, FILE *ef)
+{
+	int rcvDone = 0;
+
+	receiveAll(&procPipes[0], procCount - 1, STARTED, &rcvDone);
+	eventLog(ef, log_received_all_started_fmt, PARENT_ID);
+
+	receiveAll(&procPipes[0], procCount - 1 - rcvDone, DONE, &rcvDone);
+	eventLog(ef, log_received_all_done_fmt, PARENT_ID);
+}
+
 int main(int argc, char *argv[]) {
 	size_t procCount = atoi(argv[2]) + 1;
 
@@ -149,18 +160,7 @@ int main(int argc, char *argv[]) {
 
 	doForkWithExtra(procPipes, procCount, flog, ef);
 
-	int rcvDone = 0;
-
-	if(receiveAll(&procPipes[0], procCount - 1, STARTED, &rcvDone) == -1)
-	error("receiveAll error");
-	eventLog(ef, log_received_all_started_fmt, PARENT_ID);
-
-
-	if(receiveAll(&procPipes[0], procCount - 1 - rcvDone, DONE, &rcvDone) == -1)
-	error("receiveAll DONE error");
-	eventLog(ef, log_received_all_done_fmt, PARENT_ID);
-
-
+	recieveAllAndLog(procPipes, procCount, ef);
 
 	int finished = 0;
 	pid_t wpid;
