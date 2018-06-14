@@ -29,7 +29,7 @@ void freeUnusedPipesMemory(int count, childPipe *cp, int id)
 	}
 }
 
-void closeUnsuedPipes(int id, int count, FILE *flog, int extraCounter, childPipe *cp)
+void closeUnsuedPipes(int id, int count, FILE *flog, childPipe *cp)
 {
 	for (int i = 0; i < count; i++) 
 	{
@@ -87,7 +87,7 @@ void doForks(childPipe *procPipes, int procCount, FILE *flog, FILE *ef)
 		pid = fork();
 		if (pid == 0)
 		{
-			closeUnsuedPipes(i, procCount, flog, 3, procPipes);
+			closeUnsuedPipes(i, procCount, flog, procPipes);
 			child(i, &procPipes[i], flog, ef);
 			exit(EXIT_SUCCESS);
 		}
@@ -97,7 +97,7 @@ void doForks(childPipe *procPipes, int procCount, FILE *flog, FILE *ef)
 void doForkWithExtra(childPipe *procPipes, int procCount, FILE *flog, FILE *ef)
 {
 	doForks(procPipes, procCount, flog, ef);
-	closeUnsuedPipes(PARENT_ID, procCount, flog, 12, procPipes);
+	closeUnsuedPipes(PARENT_ID, procCount, flog, procPipes);
 }
 
 void createPipes(size_t pipesCount, childPipe* procPipes, FILE *flog, size_t procCount)
