@@ -19,15 +19,16 @@ void eventLog(FILE * stream, const char *fmt, ...);
 int child (int id, Process *pipeList, FILE *flog, FILE *ef);
 int receiveAll(Process *cp, int count, MessageType type, int *anotherCnt);
 
-static const char * const LogUnusedPipeReadErrorCloseFmt  = "%u Error closing unused pipe %d read %d in process %d with error: %s\n";
-static const char * const LogUnusedPipeReadCloseFmt       = "%u Closing unused pipe %d read %d in process %d\n";
-static const char * const LogUnusedPipeWriteErrorCloseFmt = "%u Error closing unused pipe %d write %d in process %d with error: %s\n";
-static const char * const LogUnusedPipeWriteCloseFmt      = "%u Closing unused pipe %d write %d in process %d\n";
-static const char * const LogUsedPipeReadErrorCloseFmt  = "%u Error closing used pipe %d read %d in process %d with error: %s\n";
-static const char * const LogUsedPipeReadCloseFmt       = "%u Closing used pipe %d read %d in process %d\n";
-static const char * const LogUsedPipeWriteErrorCloseFmt = "%u Error closing used pipe %d write %d in process %d with error: %s\n";
-static const char * const LogUsedPipeWriteCloseFmt      = "%u Closing used pipe %d write %d in process %d\n";
-static const char * const LogPipeOpenFmt            = "%u Open pipe from process %d to process %d: read descriptor %d, write descriptor %d\n";
+static const char * const UsedPipeReadCloseFmtLog       = "%u Closing used pipe %d read %d in process %d\n";
+static const char * const UsedPipeWriteErrorCloseFmtLog = "%u Error closing used pipe %d write %d in process %d with error: %s\n";
+static const char * const UsedPipeWriteCloseFmtLog      = "%u Closing used pipe %d write %d in process %d\n";
+static const char * const PipeOpenFmtLog            = "%u Open pipe from process %d to process %d: read descriptor %d, write descriptor %d\n";
+static const char * const UnusedPipeReadErrorCloseFmtLog  = "%u Error closing unused pipe %d read %d in process %d with error: %s\n";
+static const char * const UnusedPipeReadCloseFmtLog       = "%u Closing unused pipe %d read %d in process %d\n";
+static const char * const UnusedPipeWriteErrorCloseFmtLog = "%u Error closing unused pipe %d write %d in process %d with error: %s\n";
+static const char * const UnusedPipeWriteCloseFmtLog      = "%u Closing unused pipe %d write %d in process %d\n";
+static const char * const UsedPipeReadErrorCloseFmtLog  = "%u Error closing used pipe %d read %d in process %d with error: %s\n";
+
 
 typedef struct {
   int in;

@@ -2,84 +2,84 @@
 #include <fcntl.h>
 #include "header.h"
 
-void realCloseUnusedPipes(Process *cp, int i, int j, FILE *LoggingFile)
+void realCloseUnusedPipes(Process *processes, int k, int j, FILE *LoggingFile)
 {
-	if (cp[i].pipes[j].out != -1)
+	if (processes[k].pipes[j].out != -1)
 	{
-		if (close(cp[i].pipes[j].out) == -1)
-			fprintf(LoggingFile, LogUnusedPipeWriteErrorCloseFmt, (unsigned)time(NULL), i, cp[i].pipes[j].out, i, strerror(errno));
+		if (close(processes[k].pipes[j].out) == -1)
+			fprintf(LoggingFile, UnusedPipeWriteErrorCloseFmtLog, (unsigned)time(NULL), k, processes[k].pipes[j].out, k, strerror(errno));
 		else
-			fprintf(LoggingFile, LogUnusedPipeWriteCloseFmt, (unsigned)time(NULL), i, cp[i].pipes[j].out, i);
+			fprintf(LoggingFile, UnusedPipeWriteCloseFmtLog, (unsigned)time(NULL), k, processes[k].pipes[j].out, k);
 	}
-	if (cp[i].pipes[j].in != -1)
+	if (processes[k].pipes[j].in != -1)
 	{
-		if (close(cp[i].pipes[j].in) == -1)
-			fprintf(LoggingFile, LogUnusedPipeReadErrorCloseFmt, (unsigned)time(NULL), i, cp[i].pipes[j].in, j, strerror(errno));
+		if (close(processes[k].pipes[j].in) == -1)
+			fprintf(LoggingFile, UnusedPipeReadErrorCloseFmtLog, (unsigned)time(NULL), k, processes[k].pipes[j].in, j, strerror(errno));
 		else
-			fprintf(LoggingFile, LogUnusedPipeReadCloseFmt, (unsigned)time(NULL), i, cp[i].pipes[j].in, j);
+			fprintf(LoggingFile, UnusedPipeReadCloseFmtLog, (unsigned)time(NULL), k, processes[k].pipes[j].in, j);
 	}
 }
 
-void freeUnusedPipesMemory(int count, Process *cp, int id)
+void freeUnusedPipesMemory(int count, Process *processes, int id)
 {
 	for (int i =  1; i < count; i++)
 	{
 		if (i == id) continue;
-		else free(cp[i].pipes);
+		else free(processes[i].pipes);
 	}
 }
 
-void closeUnusedPipes(int id, int count, FILE *LoggingFile, Process *cp)
+void closeUnusedPipes(int id, int count, FILE *LoggingFile, Process *processes)
 {
 	for (int i = 0; i < count; i++) 
 	{
 		if (i == id) continue;
 		else
 		{
-			for (int j = 0; j < cp[i].count; j++)
+			for (int j = 0; j < processes[i].count; j++)
 			{
-				realCloseUnusedPipes(cp, i, j, LoggingFile);
+				realCloseUnusedPipes(processes, i, j, LoggingFile);
 			}
 		}
 	}
 
-	freeUnusedPipesMemory(count, cp, id);
+	freeUnusedPipesMemory(count, processes, id);
 }
 
-void closeUsedPipesIn(FILE *LoggingFile, int id, int j, Process *cp)
+void closeUsedPipesIn(FILE *LoggingFile, int id, int j, Process *processes)
 {
-	if (cp->pipes[j].in != -1)
+	if (processes->pipes[j].in != -1)
 	{
-		if (close(cp->pipes[j].in) == -1)
-			fprintf(LoggingFile, LogUsedPipeReadErrorCloseFmt, (unsigned)time(NULL), j, cp->pipes[j].in, id, strerror(errno));
+		if (close(processes->pipes[j].in) == -1)
+			fprintf(LoggingFile, UsedPipeReadErrorCloseFmtLog, (unsigned)time(NULL), j, processes->pipes[j].in, id, strerror(errno));
 		else
-			fprintf(LoggingFile, LogUsedPipeReadCloseFmt, (unsigned)time(NULL), j, cp->pipes[j].in, id);
+			fprintf(LoggingFile, UsedPipeReadCloseFmtLog, (unsigned)time(NULL), j, processes->pipes[j].in, id);
 	}
 }
 
-void closeUsedPipesOut(FILE *LoggingFile, int id, int j, Process *cp)
+void closeUsedPipesOut(FILE *LoggingFile, int id, int j, Process *processes)
 {
-	if (cp->pipes[j].out != -1)
+	if (processes->pipes[j].out != -1)
 	{
-		if (close(cp->pipes[j].out) == -1)
-			fprintf(LoggingFile, LogUsedPipeWriteErrorCloseFmt, (unsigned)time(NULL), j, cp->pipes[j].out, id, strerror(errno));
+		if (close(processes->pipes[j].out) == -1)
+			fprintf(LoggingFile, UsedPipeWriteErrorCloseFmtLog, (unsigned)time(NULL), j, processes->pipes[j].out, id, strerror(errno));
 		else
-			fprintf(LoggingFile, LogUsedPipeWriteCloseFmt, (unsigned)time(NULL), j, cp->pipes[j].out, id);
+			fprintf(LoggingFile, UsedPipeWriteCloseFmtLog, (unsigned)time(NULL), j, processes->pipes[j].out, id);
 	}
 }
 
-void closeUsedPipes(int id, Process *cp, FILE *LoggingFile)
+void closeUsedPipes(int id, Process *processes, FILE *LoggingFile)
 {
-    for (int j = 0; j < cp->count; j++)
+    for (int j = 0; j < processes->count; j++)
 	{
-		closeUsedPipesIn(LoggingFile, PARENT_ID, j, cp);
-		closeUsedPipesOut(LoggingFile, PARENT_ID, j, cp);
+		closeUsedPipesIn(LoggingFile, PARENT_ID, j, processes);
+		closeUsedPipesOut(LoggingFile, PARENT_ID, j, processes);
     }
 
-    free(cp->pipes);
+    free(processes->pipes);
 }
 
-void doForks(Process *procPipes, int numberOfProcesses, FILE *LoggingFile, FILE *EventsLoggingFile)
+void doForks(Process *processes, int numberOfProcesses, FILE *LoggingFile, FILE *EventsLoggingFile)
 {
 	pid_t pid;
 	for (int i = 1; i < numberOfProcesses; i++)
@@ -87,20 +87,20 @@ void doForks(Process *procPipes, int numberOfProcesses, FILE *LoggingFile, FILE 
 		pid = fork();
 		if (pid == 0)
 		{
-			closeUnusedPipes(i, numberOfProcesses, LoggingFile, procPipes);
-			child(i, &procPipes[i], LoggingFile, EventsLoggingFile);
+			closeUnusedPipes(i, numberOfProcesses, LoggingFile, processes);
+			child(i, &processes[i], LoggingFile, EventsLoggingFile);
 			exit(EXIT_SUCCESS);
 		}
 	}
 }
 
-void doForkWithExtra(Process *procPipes, int numberOfProcesses, FILE *LoggingFile, FILE *EventsLoggingFile)
+void doForkWithExtra(Process *processes, int numberOfProcesses, FILE *LoggingFile, FILE *EventsLoggingFile)
 {
-	doForks(procPipes, numberOfProcesses, LoggingFile, EventsLoggingFile);
-	closeUnusedPipes(PARENT_ID, numberOfProcesses, LoggingFile, procPipes);
+	doForks(processes, numberOfProcesses, LoggingFile, EventsLoggingFile);
+	closeUnusedPipes(PARENT_ID, numberOfProcesses, LoggingFile, processes);
 }
 
-void createPipes(int pipesCount, Process* procPipes, FILE *LoggingFile, int numberOfProcesses)
+void createPipes(Process* processes, FILE *LoggingFile, int numberOfProcesses)
 {
 	int inFD[2];
 	int outFD[2];
@@ -112,25 +112,25 @@ void createPipes(int pipesCount, Process* procPipes, FILE *LoggingFile, int numb
 			pipe(inFD);
 			pipe(outFD);
 
-			procPipes[toProcess].pipes[fromProcess].in = outFD[0];
-			procPipes[toProcess].pipes[fromProcess].out = inFD[1];
-			procPipes[fromProcess].pipes[toProcess].in = inFD[0];
-			procPipes[fromProcess].pipes[toProcess].out = outFD[1];
+			processes[toProcess].pipes[fromProcess].in = outFD[0];
+			processes[toProcess].pipes[fromProcess].out = inFD[1];
+			processes[fromProcess].pipes[toProcess].in = inFD[0];
+			processes[fromProcess].pipes[toProcess].out = outFD[1];
 
-			fprintf(LoggingFile, LogPipeOpenFmt, (unsigned)time(NULL), fromProcess, toProcess, outFD[0], outFD[1]);
-			fprintf(LoggingFile, LogPipeOpenFmt, (unsigned)time(NULL), toProcess, fromProcess, inFD[0], inFD[1]);
+			fprintf(LoggingFile, PipeOpenFmtLog, (unsigned)time(NULL), fromProcess, toProcess, outFD[0], outFD[1]);
+			fprintf(LoggingFile, PipeOpenFmtLog, (unsigned)time(NULL), toProcess, fromProcess, inFD[0], inFD[1]);
 		}
 	}
 }
 
-void recieveAllAndLog(Process* procPipes, int numberOfProcesses, FILE *EventsLoggingFile)
+void recieveAllAndLog(Process* processes, int numberOfProcesses, FILE *EventsLoggingFile)
 {
 	int rcvDone = 0;
 
-	receiveAll(&procPipes[0], numberOfProcesses - 1, STARTED, &rcvDone);
+	receiveAll(&processes[0], numberOfProcesses - 1, STARTED, &rcvDone);
 	eventLog(EventsLoggingFile, log_received_all_started_fmt, PARENT_ID);
 
-	receiveAll(&procPipes[0], numberOfProcesses - 1 - rcvDone, DONE, &rcvDone);
+	receiveAll(&processes[0], numberOfProcesses - 1 - rcvDone, DONE, &rcvDone);
 	eventLog(EventsLoggingFile, log_received_all_done_fmt, PARENT_ID);
 }
 
@@ -164,7 +164,7 @@ int main(int argc, char *argv[]) {
 		processes[i].pipes = malloc(numberOfProcesses * sizeof(pipeDescriptor));
 	}
 
-	createPipes(numberOfPipes, processes, LoggingFile, numberOfProcesses);
+	createPipes(processes, LoggingFile, numberOfProcesses);
 
 	for (int i = 0; i < numberOfProcesses; i++) 
 	{
