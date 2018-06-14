@@ -62,6 +62,8 @@ int CheckDoneMsg(int id, Process *process, FILE *EventsLoggingFile)
 	eventLog(EventsLoggingFile, log_received_all_done_fmt, id);
 	
 	free((char*)msg);
+	
+	return 0;
 }
 
 int child(int id, Process *process, FILE *LoggingFile, FILE *EventsLoggingFile) 
