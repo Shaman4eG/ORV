@@ -2,7 +2,7 @@
 #include <fcntl.h>
 #include "header.h"
 
-void realCloseUnusedPipes(childPipe *cp, int i, int j, FILE *LoggingFile)
+void realCloseUnusedPipes(Process *cp, int i, int j, FILE *LoggingFile)
 {
 	if (cp[i].pipes[j].out != -1)
 	{
@@ -20,7 +20,7 @@ void realCloseUnusedPipes(childPipe *cp, int i, int j, FILE *LoggingFile)
 	}
 }
 
-void freeUnusedPipesMemory(int count, childPipe *cp, int id)
+void freeUnusedPipesMemory(int count, Process *cp, int id)
 {
 	for (int i =  1; i < count; i++)
 	{
@@ -29,7 +29,7 @@ void freeUnusedPipesMemory(int count, childPipe *cp, int id)
 	}
 }
 
-void closeUnusedPipes(int id, int count, FILE *LoggingFile, childPipe *cp)
+void closeUnusedPipes(int id, int count, FILE *LoggingFile, Process *cp)
 {
 	for (int i = 0; i < count; i++) 
 	{
@@ -46,7 +46,7 @@ void closeUnusedPipes(int id, int count, FILE *LoggingFile, childPipe *cp)
 	freeUnusedPipesMemory(count, cp, id);
 }
 
-void closeUsedPipesIn(FILE *LoggingFile, int id, int j, childPipe *cp)
+void closeUsedPipesIn(FILE *LoggingFile, int id, int j, Process *cp)
 {
 	if (cp->pipes[j].in != -1)
 	{
@@ -57,7 +57,7 @@ void closeUsedPipesIn(FILE *LoggingFile, int id, int j, childPipe *cp)
 	}
 }
 
-void closeUsedPipesOut(FILE *LoggingFile, int id, int j, childPipe *cp)
+void closeUsedPipesOut(FILE *LoggingFile, int id, int j, Process *cp)
 {
 	if (cp->pipes[j].out != -1)
 	{
@@ -68,7 +68,7 @@ void closeUsedPipesOut(FILE *LoggingFile, int id, int j, childPipe *cp)
 	}
 }
 
-void closeUsedPipes(int id, childPipe *cp, FILE *LoggingFile)
+void closeUsedPipes(int id, Process *cp, FILE *LoggingFile)
 {
     for (int j = 0; j < cp->count; j++)
 	{
@@ -79,7 +79,7 @@ void closeUsedPipes(int id, childPipe *cp, FILE *LoggingFile)
     free(cp->pipes);
 }
 
-void doForks(childPipe *procPipes, int numberOfProcesses, FILE *LoggingFile, FILE *EventsLoggingFile)
+void doForks(Process *procPipes, int numberOfProcesses, FILE *LoggingFile, FILE *EventsLoggingFile)
 {
 	pid_t pid;
 	for (int i = 1; i < numberOfProcesses; i++)
@@ -94,13 +94,13 @@ void doForks(childPipe *procPipes, int numberOfProcesses, FILE *LoggingFile, FIL
 	}
 }
 
-void doForkWithExtra(childPipe *procPipes, int numberOfProcesses, FILE *LoggingFile, FILE *EventsLoggingFile)
+void doForkWithExtra(Process *procPipes, int numberOfProcesses, FILE *LoggingFile, FILE *EventsLoggingFile)
 {
 	doForks(procPipes, numberOfProcesses, LoggingFile, EventsLoggingFile);
 	closeUnusedPipes(PARENT_ID, numberOfProcesses, LoggingFile, procPipes);
 }
 
-void createPipes(size_t pipesCount, childPipe* procPipes, FILE *LoggingFile, size_t numberOfProcesses)
+void createPipes(int pipesCount, Process* procPipes, FILE *LoggingFile, int numberOfProcesses)
 {
 	int inFD[2];
 	int outFD[2];
@@ -123,7 +123,7 @@ void createPipes(size_t pipesCount, childPipe* procPipes, FILE *LoggingFile, siz
 	}
 }
 
-void recieveAllAndLog(childPipe* procPipes, size_t numberOfProcesses, FILE *EventsLoggingFile)
+void recieveAllAndLog(Process* procPipes, int numberOfProcesses, FILE *EventsLoggingFile)
 {
 	int rcvDone = 0;
 
@@ -134,7 +134,7 @@ void recieveAllAndLog(childPipe* procPipes, size_t numberOfProcesses, FILE *Even
 	eventLog(EventsLoggingFile, log_received_all_done_fmt, PARENT_ID);
 }
 
-void waitFinishing(size_t numberOfProcesses)
+void waitFinishing(int numberOfProcesses)
 {
 	int finished = 0;
 	pid_t wpid;
@@ -145,41 +145,39 @@ void waitFinishing(size_t numberOfProcesses)
 }
 
 int main(int argc, char *argv[]) {
-	size_t numberOfProcesses = atoi(argv[2]) + 1;
+	int numberOfProcesses = atoi(argv[2]) + 1;
 
 	FILE *EventsLoggingFile = fopen(events_log, "a");
 	FILE *LoggingFile = fopen(pipes_log, "a");
 
 	//=============================================================
-	size_t pipesCount = 0;
+	int numberOfPipes = 0;
 
-	for (size_t i = 1; i < numberOfProcesses; i++)
-	{
-		pipesCount += i;
-	}
+	for (int i = 1; i < numberOfProcesses; i++)
+		numberOfPipes += i;
 	
-	childPipe* procPipes = malloc(sizeof(childPipe) * numberOfProcesses);
+	Process* processes = malloc(sizeof(Process) * numberOfProcesses);
 
-	for (size_t i = 0; i < numberOfProcesses; i++)
+	for (int i = 0; i < numberOfProcesses; i++)
 	{
-		procPipes[i].count = numberOfProcesses;
-		procPipes[i].pipes = malloc(numberOfProcesses * sizeof(pipeDesc));
+		processes[i].count = numberOfProcesses;
+		processes[i].pipes = malloc(numberOfProcesses * sizeof(pipeDescriptor));
 	}
 
-	createPipes(pipesCount, procPipes, LoggingFile, numberOfProcesses);
+	createPipes(numberOfPipes, processes, LoggingFile, numberOfProcesses);
 
 	for (int i = 0; i < numberOfProcesses; i++) 
 	{
-		procPipes[i].pipes[i].out = -1;
-		procPipes[i].pipes[i].in = -1;
+		processes[i].pipes[i].out = -1;
+		processes[i].pipes[i].in = -1;
 	}
 	//=============================================================
 
-	doForkWithExtra(procPipes, numberOfProcesses, LoggingFile, EventsLoggingFile);
+	doForkWithExtra(processes, numberOfProcesses, LoggingFile, EventsLoggingFile);
 
-	recieveAllAndLog(procPipes, numberOfProcesses, EventsLoggingFile);
+	recieveAllAndLog(processes, numberOfProcesses, EventsLoggingFile);
 
-	closeUsedPipes(PARENT_ID, &procPipes[0], LoggingFile);
+	closeUsedPipes(PARENT_ID, &processes[0], LoggingFile);
 
 	waitFinishing(numberOfProcesses);
 

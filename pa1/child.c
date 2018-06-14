@@ -16,7 +16,7 @@ Message *createMessage(const char* playload, int playloadLength, MessageType typ
   return msg;
 }
 
-int child(int id, childPipe *pipesList, FILE *flog, FILE *ef) {
+int child(int id, Process *pipesList, FILE *flog, FILE *ef) {
 
   if (ef == NULL) {
     perror("events.log file open error");

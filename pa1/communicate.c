@@ -29,7 +29,7 @@ ssize_t continiousWrite (int fd, const void *buf, size_t len) {
 }
 
 int send(void * self, local_id dst, const Message * msg) {
-  pipeDesc *pd = ( pipeDesc *)self;
+  pipeDescriptor *pd = ( pipeDescriptor *)self;
   size_t len = sizeof (MessageHeader) + msg->s_header.s_payload_len * sizeof(char);
 
   if(continiousWrite (pd->out, msg, len) == -1) {
@@ -41,7 +41,7 @@ int send(void * self, local_id dst, const Message * msg) {
 }
 
 int send_multicast(void * self, const Message * msg) {
-  childPipe *pd = ( childPipe *)self;
+  Process *pd = ( Process *)self;
   for( int i = 0; i < pd->count; i++) {
     if(pd->pipes[i].out != -1) {
       if(send(&pd->pipes[i], i, msg) == -1) {
@@ -78,7 +78,7 @@ ssize_t continiousRead (int fd, void *buf, size_t len) {
 
 int receive(void * self, local_id from, Message * msg) {
 
-  pipeDesc *pd = (pipeDesc *)self;
+  pipeDescriptor *pd = (pipeDescriptor *)self;
   MessageHeader msgHeader;
   size_t len = sizeof (MessageHeader);
   ssize_t ret;
@@ -116,7 +116,7 @@ int receive(void * self, local_id from, Message * msg) {
 }
 int receive_any(void * self, Message * msg) {
 
-  childPipe *pd = ( childPipe *)self;
+  Process *pd = ( Process *)self;
   ssize_t ret = -1;
   for(int i = 1; i < pd->count; i++) {
     if(pd->pipes[i].in != -1) {
@@ -134,7 +134,7 @@ int receive_any(void * self, Message * msg) {
 
   return 0;
 }
-int receiveAll(childPipe *cp, int count, MessageType type, int *anotherCnt) {
+int receiveAll(Process *cp, int count, MessageType type, int *anotherCnt) {
 
   Message msg;
   int rcv = 0;

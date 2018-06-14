@@ -1,5 +1,5 @@
-#ifndef __COMMON_HEADER__H
-#define __COMMON_HEADER__H
+#ifndef __HEADER__H
+#define __HEADER__H
 
 #include "ipc.h"
 #include "common.h"
@@ -12,6 +12,12 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+
+void closeUsedPipes(int id, Process *cp, FILE *flog);
+void closeUnusedPipes(int id, int count, FILE *flog, Process *cp);
+void eventLog(FILE * stream, const char *fmt, ...);
+int child (int id, Process *pipeList, FILE *flog, FILE *ef);
+int receiveAll(Process *cp, int count, MessageType type, int *anotherCnt);
 
 static const char * const LogUnusedPipeReadErrorCloseFmt  = "%u Error closing unused pipe %d read %d in process %d with error: %s\n";
 static const char * const LogUnusedPipeReadCloseFmt       = "%u Closing unused pipe %d read %d in process %d\n";
@@ -26,17 +32,11 @@ static const char * const LogPipeOpenFmt            = "%u Open pipe from process
 typedef struct {
   int in;
   int out;
-} pipeDesc;
+} pipeDescriptor;
 
 typedef struct {
-  pipeDesc *pipes;
-  size_t count;
-} childPipe;
+  pipeDescriptor *pipes;
+  int count;
+} Process;
 
-void eventLog(FILE * stream, const char *fmt, ...);
-int child (int id, childPipe *pipeList, FILE *flog, FILE *ef);
-int receiveAll(childPipe *cp, int count, MessageType type, int *anotherCnt);
-void closeUsedPipes(int id, childPipe *cp, FILE *flog);
-void closeUnusedPipes(int id, int count, FILE *flog, childPipe *cp);
-
-#endif // __COMMON_HEADER__H
+#endif
