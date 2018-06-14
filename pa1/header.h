@@ -13,12 +13,6 @@
 #include <time.h>
 #include <unistd.h>
 
-void closeUsedPipes(int id, Process *cp, FILE *LoggingFile);
-void closeUnusedPipes(int id, int count, FILE *LoggingFile, Process *cp);
-void eventLog(FILE * stream, const char *fmt, ...);
-int child (int id, Process *pipeList, FILE *LoggingFile, FILE *EventsLoggingFile);
-int receiveAll(Process *cp, int count, MessageType type, int *anotherCnt);
-
 static const char * const UsedPipeReadCloseFmtLog       = "%u Closing used pipe %d read %d in process %d\n";
 static const char * const UsedPipeWriteErrorCloseFmtLog = "%u Error closing used pipe %d write %d in process %d with error: %s\n";
 static const char * const UsedPipeWriteCloseFmtLog      = "%u Closing used pipe %d write %d in process %d\n";
@@ -39,4 +33,9 @@ typedef struct {
   int count;
 } Process;
 
+void closeUsedPipes(int id, Process *cp, FILE *LoggingFile);
+void closeUnusedPipes(int id, int count, FILE *LoggingFile, Process *cp);
+void eventLog(FILE * stream, const char *fmt, ...);
+int child (int id, Process *pipeList, FILE *LoggingFile, FILE *EventsLoggingFile);
+int receiveAll(Process *cp, int count, MessageType type, int *anotherCnt);
 #endif

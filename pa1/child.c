@@ -15,6 +15,7 @@ Message *generateMsg(MessageType msgType, const char* payload, int payloadLength
 
 int CheckStartedMsg(int id, pid_t pid, pid_t parentPid, Process *process, FILE *EventsLoggingFile)
 {
+	int rcvDone = 0;
 	char messageStarted[49];
 	int length = sprintf(messageStarted, log_started_fmt, id, pid, parentPid);
 	if (length < 0)	return -1;
@@ -22,7 +23,7 @@ int CheckStartedMsg(int id, pid_t pid, pid_t parentPid, Process *process, FILE *
 	const Message *msg = generateMsg(STARTED, messageStarted, length);
 
 	// Sending
-	if (send_multicast(pipesList, msg) == -1) 
+	if (send_multicast(process, msg) == -1) 
 		return -1;
 
 	eventLog(EventsLoggingFile, log_started_fmt, id, pid, parentPid);
