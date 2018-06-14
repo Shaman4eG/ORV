@@ -150,13 +150,10 @@ int main(int argc, char *argv[])
 	FILE *EventsLoggingFile = fopen(events_log, "a");
 	FILE *LoggingFile = fopen(pipes_log, "a");
 	
-	fprintf(LoggingFile, "entering atoi func");
-	fprintf(LoggingFile, argc);
-	fprintf(LoggingFile, "   ");
-	fprintf(LoggingFile, argv[0]);
-	fprintf(LoggingFile, "   ");
-	fprintf(LoggingFile, argv[1]);
-	return 0;
+	printf(argc);
+	printf(argv[0]);
+	printf(argv[1]);
+	printf(argv[2]);
 	int numberOfProcesses = atoi(argv[2]) + 1;
 	
 	
