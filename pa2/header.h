@@ -33,24 +33,24 @@ typedef struct {
 } PipesList;
 
 typedef struct {
-  PipesList *pipesList;
   local_id id;
+  FILE *LoggingFile;
+  FILE *EventsLoggingFile;
   pid_t pid;
   pid_t ppid;
   BalanceHistory *history;
   balance_t curBalance;
-  FILE *fPipesLog;
-  FILE *fEventsLog;
-} ProcessInfo;
+  PipesList *pipesList;
+} Process;
 
 typedef void (*buff_handler) (void *buff, Message *msg, int rcv);
 
 void writeLog (FILE *stream, const char *fmt, ...);
 void error (const char *msg);
-int child (ProcessInfo *pInfo);
-int receiveAll (ProcessInfo *pi, int count, MessageType type, void *buff, buff_handler bHandler);
-void closeUsedPipes (ProcessInfo *pInfo);
-void closeUnusedPipes (ProcessInfo *pInfo, PipesList *cp);
+int child (Process *pInfo);
+int receiveAll (Process *pi, int count, MessageType type, void *buff, buff_handler bHandler);
+void closeUsedPipes (Process *pInfo);
+void closeUnusedPipes (Process *pInfo, PipesList *cp);
 Message *createMessage (const char *payload, int payloadLength, MessageType type, timestamp_t time);
 
 
