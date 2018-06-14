@@ -156,10 +156,10 @@ int main(int argc, char *argv[])
 	fprintf(LoggingFile, argv[0]);
 	fprintf(LoggingFile, "   ");
 	fprintf(LoggingFile, argv[1]);
-	
+	return 0;
 	int numberOfProcesses = atoi(argv[2]) + 1;
 	
-	return 0;
+	
 	
 	fprintf(LoggingFile, "SUCC atoi func");
 	
