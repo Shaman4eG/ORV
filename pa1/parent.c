@@ -107,16 +107,18 @@ void createPipes(Process* processes, FILE *LoggingFile, int numberOfProcesses)
 
 	for (int fromProcess = 0; fromProcess < numberOfProcesses; fromProcess++)
 	{
-		for (int toProcess = fromProcess + 1; toProcess <= numberOfProcesses; toProcess++)
+		for (int toProcess = fromProcess + 1; toProcess < numberOfProcesses; toProcess++)
 		{
+
 			pipe(inFD);
 			pipe(outFD);
+			
 
 			processes[toProcess].pipes[fromProcess].in = outFD[0];
 			processes[toProcess].pipes[fromProcess].out = inFD[1];
 			processes[fromProcess].pipes[toProcess].in = inFD[0];
 			processes[fromProcess].pipes[toProcess].out = outFD[1];
-
+			
 			fprintf(LoggingFile, PipeOpenFmtLog, (unsigned)time(NULL), fromProcess, toProcess, outFD[0], outFD[1]);
 			fprintf(LoggingFile, PipeOpenFmtLog, (unsigned)time(NULL), toProcess, fromProcess, inFD[0], inFD[1]);
 		}
@@ -146,20 +148,11 @@ void waitFinishing(int numberOfProcesses)
 
 int main(int argc, char *argv[])
 {
-	
-	printf("hello");
-	printf(argc);
-	printf(argv[0]);
-	printf(argv[1]);
-	printf(argv[2]);
-	int numberOfProcesses = atoi(argv[2]) + 1;
+
 	FILE *EventsLoggingFile = fopen(events_log, "a");
 	FILE *LoggingFile = fopen(pipes_log, "a");
 	
-	
-	
-	fprintf(LoggingFile, "SUCC atoi func");
-	
+	int numberOfProcesses = atoi(argv[2]) + 1;	
 	int numberOfPipes = 0;
 
 	for (int i = 1; i < numberOfProcesses; i++)
@@ -173,6 +166,7 @@ int main(int argc, char *argv[])
 		processes[i].pipes = malloc(numberOfProcesses * sizeof(pipeDescriptor));
 	}
 
+	
 	createPipes(processes, LoggingFile, numberOfProcesses);
 
 	for (int i = 0; i < numberOfProcesses; i++) 
@@ -181,6 +175,7 @@ int main(int argc, char *argv[])
 		processes[i].pipes[i].in = -1;
 	}
 
+	
 	doForkWithExtra(processes, numberOfProcesses, LoggingFile, EventsLoggingFile);
 
 	recieveAllAndLog(processes, numberOfProcesses, EventsLoggingFile);
