@@ -46,7 +46,7 @@ void closeUnsuedPipes(int id, int count, FILE *flog, int extraCounter, childPipe
 	freeUnusedPipesMemory(count, cp, id);
 }
 
-void closeUsedPipesIn(FILE *flog, int id, int j, childPipe *c)
+void closeUsedPipesIn(FILE *flog, int id, int j, childPipe *cp)
 {
 	if (cp->pipes[j].in != -1)
 	{
@@ -57,7 +57,7 @@ void closeUsedPipesIn(FILE *flog, int id, int j, childPipe *c)
 	}
 }
 
-void closeUsedPipesOut(FILE *flog, int id, int j, childPipe *c)
+void closeUsedPipesOut(FILE *flog, int id, int j, childPipe *cp)
 {
 	if (cp->pipes[j].out != -1)
 	{
@@ -72,8 +72,8 @@ void closeUsedPipes(int id, childPipe *cp, FILE *flog)
 {
     for (int j = 0; j < cp->count; j++)
 	{
-		closeUsedPipesIn(flog, PARENT_ID, j, &procPipes[0]);
-		closeUsedPipesOut(flog, PARENT_ID, j, &procPipes[0]);
+		closeUsedPipesIn(flog, PARENT_ID, j, cp);
+		closeUsedPipesOut(flog, PARENT_ID, j, cp);
     }
 
     free(cp->pipes);

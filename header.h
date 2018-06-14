@@ -34,10 +34,9 @@ typedef struct {
 } childPipe;
 
 void eventLog(FILE * stream, const char *fmt, ...);
-void error (const char *msg);
 int child (int id, childPipe *pipeList, FILE *flog, FILE *ef);
 int receiveAll(childPipe *cp, int count, MessageType type, int *anotherCnt);
-void closeUsedPipes(FILE *flog, childPipe *cp, int id);
-void closeUnusedPipes(FILE *flog, childPipe *cp, int count, int id);
+void closeUsedPipes(int id, childPipe *cp, FILE *flog);
+void closeUnsuedPipes(int id, int count, FILE *flog, int extraCounter, childPipe *cp);
 
 #endif // __COMMON_HEADER__H
