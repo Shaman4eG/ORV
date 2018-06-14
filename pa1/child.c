@@ -78,7 +78,6 @@ int child(int id, Process *process, FILE *LoggingFile, FILE *EventsLoggingFile)
 		return -1;
 
 	closeUsedPipes(id, process, LoggingFile);
-
 	fclose(EventsLoggingFile);
 	fclose(LoggingFile);
 	return 0;
