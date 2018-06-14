@@ -146,6 +146,7 @@ void waitFinishing(int numberOfProcesses)
 
 int main(int argc, char *argv[])
 {
+	return 0;
 	FILE *EventsLoggingFile = fopen(events_log, "a");
 	FILE *LoggingFile = fopen(pipes_log, "a");
 	
