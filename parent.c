@@ -46,21 +46,34 @@ void closeUnsuedPipes(int id, int count, FILE *flog, int extraCounter, childPipe
 	freeUnusedPipesMemory(count, cp, id);
 }
 
-void closeUsedPipes(FILE *flog, childPipe *cp, int id) {
-    for(int j = 0; j < cp->count; j++){
-      if (cp->pipes[j].in != -1) {
-        if(close(cp->pipes[j].in) == -1)
-          fprintf(flog, LogUsedPipeReadErrorCloseFmt, (unsigned)time(NULL), j, cp->pipes[j].in, id, strerror(errno));
-        else
-          fprintf(flog, LogUsedPipeReadCloseFmt, (unsigned)time(NULL), j, cp->pipes[j].in, id);
-      }
+void closeUsedPipesIn(FILE *flog, int id, int j, childPipe *c)
+{
+	if (cp->pipes[j].in != -1)
+	{
+		if (close(cp->pipes[j].in) == -1)
+			fprintf(flog, LogUsedPipeReadErrorCloseFmt, (unsigned)time(NULL), j, cp->pipes[j].in, id, strerror(errno));
+		else
+			fprintf(flog, LogUsedPipeReadCloseFmt, (unsigned)time(NULL), j, cp->pipes[j].in, id);
+	}
+}
 
-      if (cp->pipes[j].out != -1) {
-        if(close(cp->pipes[j].out) == -1)
-          fprintf(flog, LogUsedPipeWriteErrorCloseFmt, (unsigned)time(NULL), j, cp->pipes[j].out, id, strerror(errno));
-        else
-          fprintf(flog, LogUsedPipeWriteCloseFmt, (unsigned)time(NULL), j, cp->pipes[j].out, id);
-      }
+void closeUsedPipesOut(FILE *flog, int id, int j, childPipe *c)
+{
+	if (cp->pipes[j].out != -1)
+	{
+		if (close(cp->pipes[j].out) == -1)
+			fprintf(flog, LogUsedPipeWriteErrorCloseFmt, (unsigned)time(NULL), j, cp->pipes[j].out, id, strerror(errno));
+		else
+			fprintf(flog, LogUsedPipeWriteCloseFmt, (unsigned)time(NULL), j, cp->pipes[j].out, id);
+	}
+}
+
+void closeUsedPipes(int id, childPipe *cp, FILE *flog)
+{
+    for (int j = 0; j < cp->count; j++)
+	{
+		closeUsedPipesIn(flog, PARENT_ID, j, &procPipes[0]);
+		closeUsedPipesOut(flog, PARENT_ID, j, &procPipes[0]);
     }
 
     free(cp->pipes);
@@ -172,7 +185,7 @@ int main(int argc, char *argv[]) {
 
 	recieveAllAndLog(procPipes, procCount, ef);
 
-	closeUsedPipes(flog, &procPipes[0], PARENT_ID);
+	closeUsedPipes(PARENT_ID, &procPipes[0], flog);
 
 	waitFinishing(procCount);
 
