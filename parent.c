@@ -128,6 +128,16 @@ void recieveAllAndLog(childPipe* procPipes, size_t procCount, FILE *ef)
 	eventLog(ef, log_received_all_done_fmt, PARENT_ID);
 }
 
+void waitFinishing(size_t procCount)
+{
+	int finished = 0;
+	pid_t wpid;
+	while (finished < procCount && (wpid = wait(NULL)) > 0)
+	{
+		finished++;
+	}
+}
+
 int main(int argc, char *argv[]) {
 	size_t procCount = atoi(argv[2]) + 1;
 
@@ -162,19 +172,12 @@ int main(int argc, char *argv[]) {
 
 	recieveAllAndLog(procPipes, procCount, ef);
 
-	int finished = 0;
-	pid_t wpid;
-	while(finished<procCount && (wpid = wait(NULL)) > 0)
-	{
-	finished++;
-	}
-
-
 	closeUsedPipes(flog, &procPipes[0], PARENT_ID);
 
+	waitFinishing(procCount);
 
-	fclose(ef);
 	fclose(flog);
+	fclose(ef);
 
 	exit(EXIT_SUCCESS);
 }
