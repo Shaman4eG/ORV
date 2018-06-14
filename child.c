@@ -76,7 +76,7 @@ int child(int id, childPipe *pipesList, FILE *flog, FILE *ef) {
   //if(rcvCount != pipesList->count - 2)
   //  error("received count is wrog");
   eventLog(ef, log_received_all_done_fmt, id);
-  closeUsedPipes(flog, pipesList, id);
+  closeUsedPipes(id, pipesList, flog);
 
   free((char *)msg);
   fclose(ef);
