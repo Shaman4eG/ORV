@@ -37,6 +37,6 @@ void eventLog(FILE * stream, const char *fmt, ...);
 int child (int id, childPipe *pipeList, FILE *flog, FILE *ef);
 int receiveAll(childPipe *cp, int count, MessageType type, int *anotherCnt);
 void closeUsedPipes(int id, childPipe *cp, FILE *flog);
-void closeUnsuedPipes(int id, int count, FILE *flog, childPipe *cp);
+void closeUnusedPipes(int id, int count, FILE *flog, childPipe *cp);
 
 #endif // __COMMON_HEADER__H
