@@ -146,7 +146,7 @@ void waitFinishing(int numberOfProcesses)
 
 int main(int argc, char *argv[])
 {
-	return 0;
+	
 	FILE *EventsLoggingFile = fopen(events_log, "a");
 	FILE *LoggingFile = fopen(pipes_log, "a");
 	
@@ -158,6 +158,9 @@ int main(int argc, char *argv[])
 	fprintf(LoggingFile, argv[1]);
 	
 	int numberOfProcesses = atoi(argv[2]) + 1;
+	
+	return 0;
+	
 	fprintf(LoggingFile, "SUCC atoi func");
 	
 	int numberOfPipes = 0;
