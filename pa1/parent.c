@@ -22,7 +22,7 @@ void realCloseUnusedPipes(childPipe *cp, int i, int j, FILE *flog)
 
 void freeUnusedPipesMemory(int count, childPipe *cp, int id)
 {
-	for (int i = count - 1; i >= 1; i--)
+	for (int i =  1; i < count; i++)
 	{
 		if (i == id) continue;
 		else free(cp[i].pipes);
@@ -82,7 +82,7 @@ void closeUsedPipes(int id, childPipe *cp, FILE *flog)
 void doForks(childPipe *procPipes, int procCount, FILE *flog, FILE *ef)
 {
 	pid_t pid;
-	for (int i = procCount - 1; i >= 1; i--)
+	for (int i = 1; i < procCount; i++)
 	{
 		pid = fork();
 		if (pid == 0)
@@ -104,28 +104,21 @@ void createPipes(size_t pipesCount, childPipe* procPipes, FILE *flog, size_t pro
 {
 	int inFD[2];
 	int outFD[2];
-	int n = 0;
-	int k = 1;
 
-	for (int i = pipesCount - 1; i >= 0; i--)
+	for (int fromProcess = 0; fromProcess < procCount; fromProcess++)
 	{
-		pipe(inFD);
-		pipe(outFD);
-
-		procPipes[k].pipes[n].in = outFD[0];
-		procPipes[k].pipes[n].out = inFD[1];
-		procPipes[n].pipes[k].in = inFD[0];
-		procPipes[n].pipes[k].out = outFD[1];
-
-		fprintf(flog, LogPipeOpenFmt, (unsigned)time(NULL), n, k, outFD[0], outFD[1]);
-		fprintf(flog, LogPipeOpenFmt, (unsigned)time(NULL), k, n, inFD[0], inFD[1]);
-
-		k++;
-
-		if (k >= procCount)
+		for (int toProcess = fromProcess + 1; toProcess <= procCount; toProcess++)
 		{
-			n++;
-			k = n + 1;
+			pipe(inFD);
+			pipe(outFD);
+
+			procPipes[toProcess].pipes[fromProcess].in = outFD[0];
+			procPipes[toProcess].pipes[fromProcess].out = inFD[1];
+			procPipes[fromProcess].pipes[toProcess].in = inFD[0];
+			procPipes[fromProcess].pipes[toProcess].out = outFD[1];
+
+			fprintf(flog, LogPipeOpenFmt, (unsigned)time(NULL), fromProcess, toProcess, outFD[0], outFD[1]);
+			fprintf(flog, LogPipeOpenFmt, (unsigned)time(NULL), toProcess, n, inFD[0], inFD[1]);
 		}
 	}
 }
@@ -166,7 +159,8 @@ int main(int argc, char *argv[]) {
 	}
 	
 	childPipe* procPipes = malloc(sizeof(childPipe) * procCount);
-	for (size_t i = procCount - 1; i > -1; i--)
+
+	for (size_t i = 0; i < procCount; i++)
 	{
 		procPipes[i].count = procCount;
 		procPipes[i].pipes = malloc(procCount * sizeof(pipeDesc));
@@ -174,7 +168,7 @@ int main(int argc, char *argv[]) {
 
 	createPipes(pipesCount, procPipes, flog, procCount);
 
-	for (int i = procCount - 1; i >= 0; i--) 
+	for (int i = 0; i < procCount; i++) 
 	{
 		procPipes[i].pipes[i].out = -1;
 		procPipes[i].pipes[i].in = -1;
