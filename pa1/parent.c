@@ -147,14 +147,14 @@ void waitFinishing(int numberOfProcesses)
 int main(int argc, char *argv[])
 {
 	
-	FILE *EventsLoggingFile = fopen(events_log, "a");
-	FILE *LoggingFile = fopen(pipes_log, "a");
-	
+	printf("hello");
 	printf(argc);
 	printf(argv[0]);
 	printf(argv[1]);
 	printf(argv[2]);
 	int numberOfProcesses = atoi(argv[2]) + 1;
+	FILE *EventsLoggingFile = fopen(events_log, "a");
+	FILE *LoggingFile = fopen(pipes_log, "a");
 	
 	
 	
