@@ -2,18 +2,15 @@
 #include <errno.h>
 #include "header.h"
 
-Message *createMessage(const char* playload, int playloadLength, MessageType type) {
-
-  Message *msg = malloc(sizeof (Message));
-
-  msg->s_header.s_magic = MESSAGE_MAGIC;
-  msg->s_header.s_payload_len = playloadLength;
-  msg->s_header.s_type = type;
-  msg->s_header.s_local_time = (timestamp_t) time(NULL);
-
-  strcpy(msg->s_payload, playload);
-
-  return msg;
+Message *generateMsg(MessageType msgType, const char* payload, int payloadLength)
+{
+	  Message *msg = malloc(sizeof (Message));
+	  msg->s_header.s_type = msgType;
+	  msg->s_header.s_local_time = (timestamp_t) time(NULL);
+	  msg->s_header.s_magic = MESSAGE_MAGIC;
+	  msg->s_header.s_payload_len = payloadLength;
+	  strcpy(msg->s_payload, payload);
+	  return msg;
 }
 
 int child(int id, Process *pipesList, FILE *flog, FILE *ef) {
@@ -33,7 +30,7 @@ int child(int id, Process *pipesList, FILE *flog, FILE *ef) {
     perror("sprintf error");
     return -1;
   }
-  const Message *msg = createMessage(messageStarted, length, STARTED);
+  const Message *msg = generateMsg(STARTED, messageStarted, length);
   //printf("%zu\n", pipesList->count);
   //printf("%d\n", pipesList->pipes[0].out);
 
@@ -60,7 +57,7 @@ int child(int id, Process *pipesList, FILE *flog, FILE *ef) {
     perror("sprintf done error");
     return -1;
   }
-  msg = createMessage(messageDone, length, DONE);
+  msg = generateMsg(DONE, messageDone, length);
 
   if(send_multicast(pipesList, msg) == -1) {
     perror("send done error");

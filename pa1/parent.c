@@ -144,13 +144,13 @@ void waitFinishing(int numberOfProcesses)
 	}
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
 	int numberOfProcesses = atoi(argv[2]) + 1;
 
 	FILE *EventsLoggingFile = fopen(events_log, "a");
 	FILE *LoggingFile = fopen(pipes_log, "a");
 
-	//=============================================================
 	int numberOfPipes = 0;
 
 	for (int i = 1; i < numberOfProcesses; i++)
@@ -171,7 +171,6 @@ int main(int argc, char *argv[]) {
 		processes[i].pipes[i].out = -1;
 		processes[i].pipes[i].in = -1;
 	}
-	//=============================================================
 
 	doForkWithExtra(processes, numberOfProcesses, LoggingFile, EventsLoggingFile);
 
