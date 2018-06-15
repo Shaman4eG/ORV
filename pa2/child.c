@@ -27,16 +27,16 @@ void modifyHistory (Process *pInfo, balance_t balance, timestamp_t curTime) {
   };
   history->s_history_len = curTime + 1;
 
-  pInfo->curBalance = balance;
+  pInfo->currentBalance = balance;
 }
 
 int transferIn (TransferOrder *tOrder, Process *pInfo, timestamp_t time) {
-  balance_t curBlnc = pInfo->curBalance + tOrder->s_amount;
+  balance_t curBlnc = pInfo->currentBalance + tOrder->s_amount;
   modifyHistory(pInfo, curBlnc, time);
   //printf ("len is %d\n", pInfo->history->s_history_len);
 
   const Message *msg = createMessage(NULL, 0, ACK, time);
-  writeLog(pInfo->fEventsLog, log_transfer_in_fmt, time, pInfo->id, tOrder->s_amount, tOrder->s_src);
+  writeLog(pInfo->EventsLoggingFile, log_transfer_in_fmt, time, pInfo->id, tOrder->s_amount, tOrder->s_src);
   if(send(pInfo, PARENT_ID, msg) == -1) {
     fprintf(stderr, "[child %d] send error: %s\n", pInfo->id, strerror(errno));
     return -1;
@@ -49,11 +49,11 @@ int transferIn (TransferOrder *tOrder, Process *pInfo, timestamp_t time) {
 
 int transferOut (Message *msg, Process *pInfo, timestamp_t time) {
   TransferOrder *tOrder = (TransferOrder *) msg->s_payload;
-  balance_t curBlnc = pInfo->curBalance - tOrder->s_amount;
+  balance_t curBlnc = pInfo->currentBalance - tOrder->s_amount;
   modifyHistory(pInfo, curBlnc, time);
 
   const Message *outMsg = msg;
-  writeLog(pInfo->fEventsLog, log_transfer_out_fmt, time, pInfo->id, tOrder->s_amount, tOrder->s_dst);
+  writeLog(pInfo->EventsLoggingFile, log_transfer_out_fmt, time, pInfo->id, tOrder->s_amount, tOrder->s_dst);
   if(send(pInfo, tOrder->s_dst, outMsg) == -1) {
     fprintf(stderr, "[child %d] send error: %s\n", pInfo->id, strerror(errno));
     return -1;
@@ -66,14 +66,14 @@ int transferOut (Message *msg, Process *pInfo, timestamp_t time) {
 int sendDone (Process *pInfo, timestamp_t time) {
   char messageDone[MAX_PAYLOAD_LEN];
   time = get_physical_time();
-  int length = sprintf(messageDone, log_done_fmt, time, pInfo->id, pInfo->curBalance);
+  int length = sprintf(messageDone, log_done_fmt, time, pInfo->id, pInfo->currentBalance);
   if(length < 0) {
     perror("sprintf done error");
     return -1;
   }
   const Message *msg = createMessage(messageDone, length, DONE, time);
 
-  writeLog(pInfo->fEventsLog, log_done_fmt, time, pInfo->id, pInfo->curBalance);
+  writeLog(pInfo->EventsLoggingFile, log_done_fmt, time, pInfo->id, pInfo->currentBalance);
   if(send_multicast(pInfo, msg) == -1) {
     perror("send done error");
     free((char *)msg);
@@ -86,14 +86,14 @@ int sendDone (Process *pInfo, timestamp_t time) {
 int sendStart (Process *pInfo, timestamp_t time) {
   char messageStarted[MAX_PAYLOAD_LEN];
   time = get_physical_time();
-  int length = sprintf(messageStarted, log_started_fmt, time, pInfo->id, pInfo->pid, pInfo->ppid, pInfo->curBalance);
+  int length = sprintf(messageStarted, log_started_fmt, time, pInfo->id, pInfo->pid, pInfo->ppid, pInfo->currentBalance);
   if (length < 0) {
     perror("sprintf error");
     return -1;
   }
   const Message *msg = createMessage(messageStarted, length, STARTED, time);
 
-  writeLog (pInfo->fEventsLog, log_started_fmt, time, pInfo->id, pInfo->pid, pInfo->ppid, pInfo->curBalance);
+  writeLog (pInfo->EventsLoggingFile, log_started_fmt, time, pInfo->id, pInfo->pid, pInfo->ppid, pInfo->currentBalance);
   if(send_multicast(pInfo, msg) == -1) {
     fprintf(stderr, "[child %d] send_multicast error: %s", pInfo->id, strerror(errno));
     free((char *)msg);
@@ -113,7 +113,7 @@ int sendBalanceHistory (Process *pInfo, timestamp_t time) {
 
   const Message *msg = createMessage(msgBuf, len, BALANCE_HISTORY, time);
 
-  writeLog (pInfo->fEventsLog, log_received_all_done_fmt, time,  pInfo->id);
+  writeLog (pInfo->EventsLoggingFile, log_received_all_done_fmt, time,  pInfo->id);
   if(send(pInfo, PARENT_ID,  msg) == -1) {
     fprintf(stderr, "[child %d] send to %d error: %s", pInfo->id, PARENT_ID, strerror(errno));
     free((char *)msg);
@@ -134,13 +134,13 @@ int child (Process *pInfo) {
   history->s_id = pInfo->id;
   pInfo->history = history;
   timestamp_t time = get_physical_time();
-  modifyHistory(pInfo, pInfo->curBalance, time);
+  modifyHistory(pInfo, pInfo->currentBalance, time);
 
   if (sendStart(pInfo, get_physical_time()) == -1)
     return -1;
-  if (receiveAll(pInfo, pInfo->pipesList->count - 1, STARTED, NULL, NULL) == -1)
+  if (receiveAll(pInfo, pInfo->arrayOfPipes->count - 1, STARTED, NULL, NULL) == -1)
     return -1;
- writeLog(pInfo->fEventsLog, log_received_all_started_fmt, get_physical_time(), pInfo->id);
+ writeLog(pInfo->EventsLoggingFile, log_received_all_started_fmt, get_physical_time(), pInfo->id);
 
   int rcvDone = 0;
   //int rcvStart = 0;
@@ -173,7 +173,7 @@ int child (Process *pInfo) {
             break;
           case DONE:
             rcvDone++;
-            if (rcvDone == pInfo->pipesList->count - 2) {      
+            if (rcvDone == pInfo->arrayOfPipes->count - 2) {      
               if (sendBalanceHistory(pInfo, time) == -1)
                 return -1;
               working = 0;

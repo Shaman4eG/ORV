@@ -57,7 +57,7 @@ int send(void *self, local_id dst, const Message *msg) {
   size_t len =
       sizeof(MessageHeader) + msg->s_header.s_payload_len * sizeof(char);
 
-  if (continiousWrite(pi->pipesList->pipes[dst].out, msg, len) == -1) {
+  if (continiousWrite(pi->arrayOfPipes->pipes[dst].out, msg, len) == -1) {
     perror("send error\n");
     return -1;
   }
@@ -66,8 +66,8 @@ int send(void *self, local_id dst, const Message *msg) {
 
 int send_multicast(void *self, const Message *msg) {
   Process *pi = (Process *)self;
-  for (local_id i = 0; i < pi->pipesList->count; i++) {
-    if (pi->pipesList->pipes[i].out != -1) {
+  for (local_id i = 0; i < pi->arrayOfPipes->count; i++) {
+    if (pi->arrayOfPipes->pipes[i].out != -1) {
       if (send(self, i, msg) == -1) {
         perror("multicast error\n");
         return -1;
@@ -107,7 +107,7 @@ int receiveOne(void *self, local_id from, Message *msg) {
   size_t len = sizeof(MessageHeader);
   ssize_t ret;
 
-  ret = continiousRead(pi->pipesList->pipes[from].in, &msgHeader, len);
+  ret = continiousRead(pi->arrayOfPipes->pipes[from].in, &msgHeader, len);
   if (ret <= 0) {
     return -1;
   }
@@ -117,7 +117,7 @@ int receiveOne(void *self, local_id from, Message *msg) {
   if (len > 0) {
     char payload[len];
 
-    ret = read(pi->pipesList->pipes[from].in, &payload, len);
+    ret = read(pi->arrayOfPipes->pipes[from].in, &payload, len);
     if (ret == -1) {
       perror("receive payload error");
       return -2;
@@ -150,8 +150,8 @@ int receive_any(void *self, Message *msg) {
   Process *pi = (Process *)self;
   ssize_t ret;
   while (3 < 5) {
-    for (local_id i = 0; i < pi->pipesList->count; i++) {
-      if (pi->pipesList->pipes[i].in != -1) {
+    for (local_id i = 0; i < pi->arrayOfPipes->count; i++) {
+      if (pi->arrayOfPipes->pipes[i].in != -1) {
         if ((ret = receiveOne(self, i, msg)) == -1) {
           usleep((unsigned int)100);
           continue;
@@ -166,14 +166,14 @@ int receive_any(void *self, Message *msg) {
 }
 
 int receiveAll(Process *pi, int count, MessageType type, void *buf,
-               buff_handler bHandler) {
+               handlerForBuffer bHandler) {
 
   Message msg;
   int rcv = 0;
   ssize_t ret;
 
   for (local_id i = 1; i <= count; i++) {
-    if (pi->pipesList->pipes[i].in != -1) {
+    if (pi->arrayOfPipes->pipes[i].in != -1) {
       ret = receive(pi, i, &msg);
       if (ret == 0) {
         if (msg.s_header.s_magic == MESSAGE_MAGIC) {
