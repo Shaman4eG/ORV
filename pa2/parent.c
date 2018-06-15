@@ -199,12 +199,13 @@ void doHistorySaving(void *buffer, Message *msg, int rcv) {
 	memcpy(&history[rcv], (BalanceHistory *)msg->s_payload, sizeof(BalanceHistory));
 }
 
-void historyManipulations(Process* parentProcess, local_id numberOfChildren)
+AllHistory historyManipulations(Process* parentProcess, local_id numberOfChildren)
 {
 	AllHistory *history = malloc(sizeof(AllHistory));
 	history->s_history_len = numberOfChildren;
 	receiveAll(parentProcess, numberOfChildren, BALANCE_HISTORY, history->s_history, doHistorySaving);
 	prePrintHistory(numberOfChildren, history);
+	return history;
 }
 
 int main(int argc, char *argv[]) 
@@ -250,15 +251,15 @@ int main(int argc, char *argv[])
 
 	recieveAllAndLog(&parentProcess, numberOfChildren);
 
-	historyManipulations(&parentProcess, numberOfChildren);
+	AllHistory *history = historyManipulations(&parentProcess, numberOfChildren);
 
 	waitFinishing(numberOfProcesses);
 
-  free(history);
-  closeUsedPipes(&parentProcess);
+	free(history);
+	closeUsedPipes(&parentProcess);
 
-  fclose(parentProcess.LoggingFile);
-  fclose(parentProcess.EventsLoggingFile);
+	fclose(parentProcess.LoggingFile);
+	fclose(parentProcess.EventsLoggingFile);
 
-  exit(EXIT_SUCCESS);
+	exit(EXIT_SUCCESS);
 }
