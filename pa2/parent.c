@@ -222,8 +222,8 @@ int main(int argc, char *argv[])
 	
 	for (int i = 0; i < numberOfProcesses; i++)
 	{
-		processes[i].pipes[i].out = -1;
-		processes[i].pipes[i].in = -1;
+		processesPipes[i].pipes[i].out = -1;
+		processesPipes[i].pipes[i].in = -1;
 	}
 
 	parentProcess.arrayOfPipes = &processesPipes[0];
