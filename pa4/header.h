@@ -57,5 +57,4 @@ Message *createMessage (const char *payload, int payloadLength, MessageType type
 void synchronizeLamportTime(timestamp_t time);
 void noteEventForLamportTime();
 
-
 #endif // __COMMON_HEADER__H

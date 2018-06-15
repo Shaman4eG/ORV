@@ -15,29 +15,30 @@ void exchange(int i, int j);
 int parent(int v);
 
 void initHeap (int nodesCount, less_cb less)
-  { 
-      _heapSize = nodesCount;
-      _nodes = malloc(_heapSize * sizeof (Node *));
-      _heapCurrentSize = 0;
-      _less = less;
-  }
+{ 
+    _heapSize = nodesCount;
+    _nodes = malloc(_heapSize * sizeof (Node *));
+    _heapCurrentSize = 0;
+    _less = less;
+}
 
 void insertNode(Node *node)
 {
-    if (_heapCurrentSize >= _heapSize) {
-      printf("fuck you\n");
-      fflush(stdout);
-      _heapSize = _heapSize * 2;
-      _nodes = realloc(_nodes, _heapSize);
+    if (_heapCurrentSize >= _heapSize) 
+	{
+		_heapSize = _heapSize * 2;
+		_nodes = realloc(_nodes, _heapSize);
     }
     _nodes[_heapCurrentSize] = node;
     _heapCurrentSize++;
     siftUp(_heapCurrentSize - 1);
 }
 
-Node * lookAtMin() {
-    if (_heapCurrentSize == 0) {
-      return NULL;
+Node * lookAtMin() 
+{
+    if (_heapCurrentSize == 0) 
+	{
+		return NULL;
     }
     return _nodes[0];
 }
@@ -45,7 +46,7 @@ Node * lookAtMin() {
 Node * extractMin()
 {
     if (_heapCurrentSize == 0) {
-      return NULL;
+		return NULL;
     }
     Node *minNode = _nodes[0];
     _nodes[0] = _nodes[_heapCurrentSize - 1];
@@ -55,11 +56,15 @@ Node * extractMin()
 
     return minNode;
 }
- void siftDown(int v) {
+
+void siftDown(int v) 
+{
     int i;
-    while (v * 2 + 1 < _heapCurrentSize) {
+    while (v * 2 + 1 < _heapCurrentSize) 
+	{
         i = v * 2 + 1;
-        if (i + 1 < _heapCurrentSize) {
+        if (i + 1 < _heapCurrentSize) 
+		{
             if(_less(_nodes[i + 1], _nodes[i])) i++;
         }
         if(!_less(_nodes[i], _nodes[v])) break;
@@ -68,22 +73,26 @@ Node * extractMin()
     }
 }
 
- void siftUp(int v){
+void siftUp(int v)
+{
     int prnt = parent(v);
-    while (v > 0 && _less(_nodes[v], _nodes[prnt])) {
+    while (v > 0 && _less(_nodes[v], _nodes[prnt]))
+	{
         exchange(prnt, v);
         v = prnt;
         prnt = parent(v);
     }
 }
 
- int parent(int v){
+int parent(int v)
+{
     int parent = v / 2;
     if(v % 2 == 0 && parent != 0) parent--;
     return parent;
 }
 
- void exchange(int i, int j){
+void exchange(int i, int j)
+{
     Node *buff = _nodes[i];
     _nodes[i] = _nodes[j];
     _nodes[j] = buff;
