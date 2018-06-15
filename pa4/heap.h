@@ -11,5 +11,4 @@ Node *lookAtMin();
 Node *extractMin();
 void initHeap (int nodeCount, less_cb less);
 
-
 #endif
