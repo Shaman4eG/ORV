@@ -144,7 +144,7 @@ void doForkWithExtra(ArrayOfPipes *processesPipes, Process *parentProcess, int *
 	closeUnusedPipes(processesPipes, parentProcess);
 }
 
-void recieveAllAndLog(Process* parentProcess, int numberOfChildren)
+void recieveAllAndLog(Process* parentProcess, local_id numberOfChildren)
 {
 	receiveAll(parentProcess, numberOfChildren, STARTED, NULL, NULL);
 	saveToLog(parentProcess->EventsLoggingFile, log_received_all_started_fmt, get_physical_time(), parentProcess->id);
