@@ -17,15 +17,15 @@ void writeLog(FILE *stream, const char *fmt, ...)
 	  va_end(args);
 }
 
-Message *createMessage(const char *playload, int playloadLength, MessageType type, timestamp_t time) 
+Message *createMessage(const char *payload, int payloadLength, MessageType msgType, timestamp_t time) 
 {
 	  Message *msg = malloc(sizeof(Message));
 	  msg->s_header.s_magic = MESSAGE_MAGIC;
-	  msg->s_header.s_payload_len = playloadLength;
-	  msg->s_header.s_type = type;
+	  msg->s_header.s_payload_len = payloadLength;
+	  msg->s_header.s_type = msgType;
 	  msg->s_header.s_local_time = time;
-	  if (playload != NULL)
-		memcpy(msg->s_payload, playload, playloadLength);
+	  if (payload != NULL)
+		memcpy(msg->s_payload, payload, payloadLength);
 	  return msg;
 }
 
@@ -34,6 +34,7 @@ ssize_t continiousWrite(int fd, const void *buf, size_t len)
 	ssize_t returned;
 	ssize_t bytesSended = 0;
 	unsigned char *addr = (unsigned char *)buf;
+
 	while (len != 0 && (returned = write (fd, addr, len)) != 0) 
 	{
 		if (returned == -1) 
@@ -52,10 +53,10 @@ ssize_t continiousWrite(int fd, const void *buf, size_t len)
 
 int send(void *self, local_id dst, const Message *msg) 
 {
-	ProcessInfo *pi = (ProcessInfo *)self;
+	ProcessInfo *pInfo = (ProcessInfo *)self;
 	size_t len = sizeof(MessageHeader) + msg->s_header.s_payload_len * sizeof(char);
 
-	if (continiousWrite(pi->process->pipes[dst].out, msg, len) == -1) 
+	if (continiousWrite(pInfo->process->pipes[dst].out, msg, len) == -1) 
 	{
 		perror("send error\n");
 		return -1;
@@ -65,10 +66,10 @@ int send(void *self, local_id dst, const Message *msg)
 
 int send_multicast(void *self, const Message *msg) 
 {
-	ProcessInfo *pi = (ProcessInfo *)self;
-	for (local_id i = 0; i < pi->process->count; i++) 
+	ProcessInfo *pInfo = (ProcessInfo *)self;
+	for (local_id i = 0; i < pInfo->process->count; i++) 
 	{
-		if (pi->process->pipes[i].out != -1) 
+		if (pInfo->process->pipes[i].out != -1) 
 		{
 			if (send(self, i, msg) == -1) 
 			{
@@ -180,7 +181,7 @@ int receive_any(void *self, Message *msg)
 	}
 }
 
-int receiveAll(ProcessInfo *pi, int count, MessageType type, void *buf, buff_handler bHandler) 
+int receiveAll(ProcessInfo *pInfo, int count, MessageType type, void *buf, buff_handler bHandler) 
 {
 	Message msg;
 	int recieved = 0;
@@ -188,9 +189,9 @@ int receiveAll(ProcessInfo *pi, int count, MessageType type, void *buf, buff_han
 
 	for (local_id i = 1; i <= count; i++) 
 	{
-		if (pi->process->pipes[i].in != -1) 
+		if (pInfo->process->pipes[i].in != -1) 
 		{
-			returned = receive(pi, i, &msg);
+			returned = receive(pInfo, i, &msg);
 			if (returned == 0) 
 			{
 				if (msg.s_header.s_magic == MESSAGE_MAGIC) 
