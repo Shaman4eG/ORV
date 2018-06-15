@@ -3,11 +3,6 @@
 #include <fcntl.h>
 #include <sys/wait.h>
 
-void saveHistory(void *buf, Message *msg, int rcv) {
-    BalanceHistory *history = (BalanceHistory *) buf;
-  memcpy(&history[rcv], (BalanceHistory *)msg->s_payload, sizeof(BalanceHistory));
-}
-
 void realCloseUnusedPipes(ArrayOfPipes *processesPipes, Process *process, int k, int j)
 {
 	if (processesPipes[k].pipes[j].out != -1)
@@ -156,37 +151,60 @@ void recieveAllAndLog(Process* parentProcess, local_id numberOfChildren)
 	saveToLog(parentProcess->EventsLoggingFile, log_received_all_done_fmt, get_physical_time(), parentProcess->id);
 }
 
-void printHistory(Process *pInfo, AllHistory *aHistory, int chldCount) {
+void waitFinishing(int numberOfProcesses)
+{
+	int finished = 0;
+	pid_t wpid;
+	while (finished < numberOfProcesses && (wpid = wait(NULL)) > 0)
+	{
+		finished++;
+	}
+}
 
-  const AllHistory *cHistory;
-  cHistory = aHistory;
-  for (int i = 0; i < cHistory->s_history_len; i++) {
-    printf("len %d\n", cHistory->s_history[i].s_history_len);
-    fflush(stdout);
-  }
-  int maxLen = 0;
+void prePrintHistory(int numberOfChildren, AllHistory *history) {
 
-  for (int i = 0; i < chldCount; i++) {
-    if (aHistory->s_history[i].s_history_len > maxLen)
-      maxLen = aHistory->s_history[i].s_history_len;
-  }
-  printf("5 -%d  %d\n", maxLen, cHistory->s_history[4].s_history[6].s_balance);
-  printf("5 -%d  %d\n", maxLen, cHistory->s_history[4].s_history[5].s_balance);
+	const AllHistory *newHistory;
+	newHistory = history;
+	for (int i = 0; i < newHistory->s_history_len; i++) {
+		printf("len %d\n", newHistory->s_history[i].s_history_len);
+		fflush(stdout);
+	}
+	int maxLen = 0;
 
-  int len;
-  for (int i = 0; i < chldCount; i++) {
-    len = aHistory->s_history[i].s_history_len;
-    if (len < maxLen) {
-      BalanceState bs = aHistory->s_history[i].s_history[len - 1];
-      for (int j = len; j < maxLen; j++) {
-        bs.s_time = j;
-        aHistory->s_history[i].s_history[j] = bs;
-      }
-      aHistory->s_history[i].s_history_len = maxLen;
-    }
-  }
+	for (int i = 0; i < numberOfChildren; i++) {
+		if (history->s_history[i].s_history_len > maxLen)
+			maxLen = history->s_history[i].s_history_len;
+	}
+	printf("5 -%d  %d\n", maxLen, newHistory->s_history[4].s_history[6].s_balance);
+	printf("5 -%d  %d\n", maxLen, newHistory->s_history[4].s_history[5].s_balance);
 
-  print_history(cHistory);
+	int len;
+	for (int i = 0; i < numberOfChildren; i++) {
+		len = history->s_history[i].s_history_len;
+		if (len < maxLen) {
+			BalanceState bs = history->s_history[i].s_history[len - 1];
+			for (int j = len; j < maxLen; j++) {
+				bs.s_time = j;
+				history->s_history[i].s_history[j] = bs;
+			}
+			history->s_history[i].s_history_len = maxLen;
+		}
+	}
+
+	print_history(newHistory);
+}
+
+void doHistorySaving(void *buffer, Message *msg, int rcv) {
+	BalanceHistory *history = (BalanceHistory *)buffer;
+	memcpy(&history[rcv], (BalanceHistory *)msg->s_payload, sizeof(BalanceHistory));
+}
+
+void historyManipulations(Process* parentProcess, local_id numberOfChildren)
+{
+	AllHistory *history = malloc(sizeof(AllHistory));
+	history->s_history_len = numberOfChildren;
+	receiveAll(parentProcess, numberOfChildren, BALANCE_HISTORY, history->s_history, doHistorySaving);
+	prePrintHistory(numberOfChildren, history);
 }
 
 int main(int argc, char *argv[]) 
@@ -232,21 +250,11 @@ int main(int argc, char *argv[])
 
 	recieveAllAndLog(&parentProcess, numberOfChildren);
 
-  AllHistory *aHistory = malloc(sizeof(AllHistory));
-  aHistory->s_history_len = numberOfChildren;
-  if (receiveAll(&parentProcess, numberOfChildren, BALANCE_HISTORY,
-                        aHistory->s_history, saveHistory) == -1)
-    error("receiveAll  BALANCE_HISTORY error");
+	historyManipulations(&parentProcess, numberOfChildren);
 
-  printHistory(&parentProcess, aHistory, numberOfChildren);
+	waitFinishing(numberOfProcesses);
 
-  int finished = 0;
-  pid_t wpid;
-  while (finished < numberOfProcesses && (wpid = wait(NULL)) > 0) {
-    finished++;
-  }
-
-  free(aHistory);
+  free(history);
   closeUsedPipes(&parentProcess);
 
   fclose(parentProcess.LoggingFile);
