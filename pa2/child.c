@@ -2,8 +2,8 @@
 #include "header.h"
 
 
-void modifyHistory (Process *pInfo, balance_t balance, timestamp_t curTime) {
-  BalanceHistory *history = pInfo->history;
+void changeHistory (Process *process, balance_t balance, timestamp_t curTime) {
+  BalanceHistory *history = process->history;
   timestamp_t lastTime;
   if (curTime != 0)
     lastTime = history->s_history[history->s_history_len - 1].s_time;
@@ -27,13 +27,12 @@ void modifyHistory (Process *pInfo, balance_t balance, timestamp_t curTime) {
   };
   history->s_history_len = curTime + 1;
 
-  pInfo->currentBalance = balance;
+  process->currentBalance = balance;
 }
 
 int transferIn (TransferOrder *tOrder, Process *pInfo, timestamp_t time) {
   balance_t curBlnc = pInfo->currentBalance + tOrder->s_amount;
-  modifyHistory(pInfo, curBlnc, time);
-  //printf ("len is %d\n", pInfo->history->s_history_len);
+  changeHistory(pInfo, curBlnc, time);
 
   const Message *msg = createMessage(NULL, 0, ACK, time);
   saveToLog(pInfo->EventsLoggingFile, log_transfer_in_fmt, time, pInfo->id, tOrder->s_amount, tOrder->s_src);
@@ -50,7 +49,7 @@ int transferIn (TransferOrder *tOrder, Process *pInfo, timestamp_t time) {
 int transferOut (Message *msg, Process *pInfo, timestamp_t time) {
   TransferOrder *tOrder = (TransferOrder *) msg->s_payload;
   balance_t curBlnc = pInfo->currentBalance - tOrder->s_amount;
-  modifyHistory(pInfo, curBlnc, time);
+  changeHistory(pInfo, curBlnc, time);
 
   const Message *outMsg = msg;
   saveToLog(pInfo->EventsLoggingFile, log_transfer_out_fmt, time, pInfo->id, tOrder->s_amount, tOrder->s_dst);
@@ -107,7 +106,6 @@ int sendStart (Process *pInfo, timestamp_t time) {
 int sendBalanceHistory (Process *pInfo, timestamp_t time) {
 
   size_t len = sizeof (local_id) + sizeof (uint8_t) + pInfo->history->s_history_len * sizeof (BalanceState);
-  //size_t len = sizeof (BalanceHistory);
   char msgBuf[MAX_PAYLOAD_LEN];
   memcpy(msgBuf, pInfo->history, len);
 
@@ -134,7 +132,7 @@ int child (Process *pInfo) {
   history->s_id = pInfo->id;
   pInfo->history = history;
   timestamp_t time = get_physical_time();
-  modifyHistory(pInfo, pInfo->currentBalance, time);
+  changeHistory(pInfo, pInfo->currentBalance, time);
 
   if (sendStart(pInfo, get_physical_time()) == -1)
     return -1;
@@ -143,7 +141,6 @@ int child (Process *pInfo) {
  saveToLog(pInfo->EventsLoggingFile, log_received_all_started_fmt, get_physical_time(), pInfo->id);
 
   int rcvDone = 0;
-  //int rcvStart = 0;
   Message inMsg;
   TransferOrder *tOrder;
   int working = 1;
