@@ -35,7 +35,7 @@ typedef struct {
 
 typedef struct {
   bool isMutex;
-  Process *pipesList;
+  Process *process;
   int workers;
   local_id id;
   pid_t pid;

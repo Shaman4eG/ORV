@@ -15,7 +15,7 @@ void exchange(int i, int j);
 int parent(int v);
 
 void initHeap (int nodesCount, less_cb less)
-  {
+  { 
       _heapSize = nodesCount;
       _nodes = malloc(_heapSize * sizeof (Node *));
       _heapCurrentSize = 0;

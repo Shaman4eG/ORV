@@ -13,7 +13,7 @@ int request_cs (const void *self) {
   //printf("%d after multicast\n", pi->id);
   //fflush(stdout);
 
-  initQueue (pi->pipesList->count);
+  initQueue (pi->process->count);
   //printf("after initQueue\n");
   //fflush(stdout);
 
@@ -61,8 +61,8 @@ int request_cs (const void *self) {
         //fflush(stdout);
         //if (replied == pi->workers - 1)
         //  printf("%d font is %d\n", pi->id, queueFont()->id);
-        //if (!(replied < (pi->pipesList->count - 1) || ((minNode = queueFont()) && minNode->id != pi->id))) {
-        //  printf("fuck %d\n", pi->pipesList->count);
+        //if (!(replied < (pi->process->count - 1) || ((minNode = queueFont()) && minNode->id != pi->id))) {
+        //  printf("fuck %d\n", pi->process->count);
         //  fflush(stdout);
         //}
         break;

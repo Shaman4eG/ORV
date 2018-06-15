@@ -72,7 +72,7 @@ int child (ProcessInfo *pInfo) {
   noteEventForLamportTime();
   if (sendStart(pInfo, get_lamport_time()) == -1)
     return -1;
-  if (receiveAll(pInfo, pInfo->pipesList->count - 1, STARTED, NULL, NULL) == -1)
+  if (receiveAll(pInfo, pInfo->process->count - 1, STARTED, NULL, NULL) == -1)
     return -1;
  writeLog(pInfo->fEventsLog, log_received_all_started_fmt, get_lamport_time(), pInfo->id);
 
