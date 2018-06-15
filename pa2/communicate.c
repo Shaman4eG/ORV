@@ -7,7 +7,7 @@
 #include "header.h"
 #include <stdarg.h>
 
-void writeLog(FILE *stream, const char *fmt, ...) {
+void saveToLog(FILE *stream, const char *fmt, ...) {
   va_list args, args2;
   va_start(args, fmt);
   va_copy(args2, args);

@@ -144,6 +144,18 @@ void doForkWithExtra(ArrayOfPipes *processesPipes, Process *parentProcess, int *
 	closeUnusedPipes(processesPipes, parentProcess);
 }
 
+void recieveAllAndLog(Process* parentProcess, int numberOfChildren)
+{
+	receiveAll(parentProcess, numberOfChildren, STARTED, NULL, NULL)
+	saveToLog(parentProcess->EventsLoggingFile, log_received_all_started_fmt, get_physical_time(), parentProcess->id);
+	bank_robbery(parentProcess, numberOfChildren);
+	Message *message = createMessage(NULL, 0, STOP, get_physical_time());
+	send_multicast(parentProcess, message)
+	free((char *)message);
+	receiveAll(parentProcess, numberOfChildren, DONE, NULL, NULL)
+	saveToLog(parentProcess->EventsLoggingFile, log_received_all_done_fmt, get_physical_time(), parentProcess->id);
+}
+
 void printHistory(Process *pInfo, AllHistory *aHistory, int chldCount) {
 
   const AllHistory *cHistory;
@@ -207,35 +219,11 @@ int main(int argc, char *argv[])
 	}
 
 	createPipes(processesPipes, &parentProcess, numberOfProcesses);
-	
 	parentProcess.arrayOfPipes = &processesPipes[0];
 
 	doForkWithExtra(processesPipes, &parentProcess, startingBalances);
 
-  // printf("child count is %d\n", chldCount);
-  if (receiveAll(&parentProcess, numberOfChildren, STARTED, NULL, NULL) == -1)
-        error("receiveAll error");
-   writeLog (parentProcess.EventsLoggingFile, log_received_all_started_fmt,
-   get_physical_time(), parentProcess.id);
-
-  // printf("before robbery\n");
-  // fflush(stdout);
-  bank_robbery(&parentProcess, numberOfChildren);
-//  if (receiveAll(&parentProc, chldCount, ACK, NULL, NULL))
-//    error("receiveAll error");
-
-  const Message *msg = createMessage(NULL, 0, STOP, get_physical_time());
-
-  if (send_multicast(&parentProcess, msg) == -1) {
-    perror("send done error");
-    return -1;
-  }
-  free((char *)msg);
-
-  if (receiveAll(&parentProcess, numberOfChildren, DONE, NULL, NULL) == -1)
-    error("receiveAll DONE error");
-   writeLog (parentProcess.EventsLoggingFile, log_received_all_done_fmt,
-   get_physical_time(), parentProcess.id);
+	recieveAllAndLog(&parentProcess, numberOfChildren);
 
   AllHistory *aHistory = malloc(sizeof(AllHistory));
   aHistory->s_history_len = numberOfChildren;
