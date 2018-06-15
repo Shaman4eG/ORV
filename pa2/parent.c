@@ -199,7 +199,7 @@ void doHistorySaving(void *buffer, Message *msg, int rcv) {
 	memcpy(&history[rcv], (BalanceHistory *)msg->s_payload, sizeof(BalanceHistory));
 }
 
-AllHistory historyManipulations(Process* parentProcess, local_id numberOfChildren)
+AllHistory* historyManipulations(Process* parentProcess, local_id numberOfChildren)
 {
 	AllHistory *history = malloc(sizeof(AllHistory));
 	history->s_history_len = numberOfChildren;
