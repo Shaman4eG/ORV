@@ -8,125 +8,102 @@ void saveHistory(void *buf, Message *msg, int rcv) {
   memcpy(&history[rcv], (BalanceHistory *)msg->s_payload, sizeof(BalanceHistory));
 }
 
-void closeUnsuedPipes(Process *pInfo, PipesList *cp) {
-  for (int i = 0; i < pInfo->pipesList->count; i++) { // TODO another function
+void closeUnsuedPipes(Process *pInfo, ArrayOfPipes *cp) {
+  for (int i = 0; i < pInfo->arrayOfPipes->count; i++) { // TODO another function
     if (i != pInfo->id) {
       for (int j = 0; j < cp[i].count; j++) {
         if (cp[i].pipes[j].in != -1) {
           if (close(cp[i].pipes[j].in) == -1)
-            fprintf(pInfo->LoggingFile, LogUnusedPipeReadErrorCloseFmt,
+            fprintf(pInfo->LoggingFile, UnusedPipeReadErrorCloseFmtLog,
                     (unsigned)time(NULL), i, cp[i].pipes[j].in, j,
                     strerror(errno));
           else
-            fprintf(pInfo->LoggingFile, LogUnusedPipeReadCloseFmt,
+            fprintf(pInfo->LoggingFile, UnusedPipeReadCloseFmtLog,
                     (unsigned)time(NULL), i, cp[i].pipes[j].in, j);
         }
 
         if (cp[i].pipes[j].out != -1) {
           if (close(cp[i].pipes[j].out) == -1)
-            fprintf(pInfo->LoggingFile, LogUnusedPipeWriteErrorCloseFmt,
+            fprintf(pInfo->LoggingFile, UnusedPipeWriteErrorCloseFmtLog,
                     (unsigned)time(NULL), i, cp[i].pipes[j].out, i,
                     strerror(errno));
           else
-            fprintf(pInfo->LoggingFile, LogUnusedPipeWriteCloseFmt,
+            fprintf(pInfo->LoggingFile, UnusedPipeWriteCloseFmtLog,
                     (unsigned)time(NULL), i, cp[i].pipes[j].out, i);
         }
       }
     }
   }
 
-  for (int i = 1; i < pInfo->pipesList->count; i++) {
+  for (int i = 1; i < pInfo->arrayOfPipes->count; i++) {
     if (i != pInfo->id)
       free(cp[i].pipes);
   }
 }
 
 void closeUsedPipes(Process *pInfo) {
-  for (int j = 0; j < pInfo->pipesList->count; j++) {
-    if (pInfo->pipesList->pipes[j].in != -1) {
-      if (close(pInfo->pipesList->pipes[j].in) == -1)
-        fprintf(pInfo->LoggingFile, LogUsedPipeReadErrorCloseFmt,
-                (unsigned)time(NULL), j, pInfo->pipesList->pipes[j].in,
+  for (int j = 0; j < pInfo->arrayOfPipes->count; j++) {
+    if (pInfo->arrayOfPipes->pipes[j].in != -1) {
+      if (close(pInfo->arrayOfPipes->pipes[j].in) == -1)
+        fprintf(pInfo->LoggingFile, UsedPipeReadErrorCloseFmtLog,
+                (unsigned)time(NULL), j, pInfo->arrayOfPipes->pipes[j].in,
                 pInfo->id, strerror(errno));
       else
-        fprintf(pInfo->LoggingFile, LogUsedPipeReadCloseFmt, (unsigned)time(NULL),
-                j, pInfo->pipesList->pipes[j].in, pInfo->id);
+        fprintf(pInfo->LoggingFile, UsedPipeReadCloseFmtLog, (unsigned)time(NULL),
+                j, pInfo->arrayOfPipes->pipes[j].in, pInfo->id);
     }
 
-    if (pInfo->pipesList->pipes[j].out != -1) {
-      if (close(pInfo->pipesList->pipes[j].out) == -1)
-        fprintf(pInfo->LoggingFile, LogUsedPipeWriteErrorCloseFmt,
-                (unsigned)time(NULL), j, pInfo->pipesList->pipes[j].out,
+    if (pInfo->arrayOfPipes->pipes[j].out != -1) {
+      if (close(pInfo->arrayOfPipes->pipes[j].out) == -1)
+        fprintf(pInfo->LoggingFile, UsedPipeWriteErrorCloseFmtLog,
+                (unsigned)time(NULL), j, pInfo->arrayOfPipes->pipes[j].out,
                 pInfo->id, strerror(errno));
       else
-        fprintf(pInfo->LoggingFile, LogUsedPipeWriteCloseFmt,
-                (unsigned)time(NULL), j, pInfo->pipesList->pipes[j].out,
+        fprintf(pInfo->LoggingFile, UsedPipeWriteCloseFmtLog,
+                (unsigned)time(NULL), j, pInfo->arrayOfPipes->pipes[j].out,
                 pInfo->id);
     }
   }
 
-  free(pInfo->pipesList->pipes);
+  free(pInfo->arrayOfPipes->pipes);
 }
 
-PipesList *createPipes(Process *pInfo, int procCount) {
+void createPipes(Process *processes, int numberOfProcesses) 
+{
+	int inFD[2];
+	int outFD[2];
 
-  int pipesCount = 0;
-  for (int i = procCount - 1; i > 0; i--)
-    pipesCount += i;
+	for (int fromProcess = 0; fromProcess < numberOfProcesses; fromProcess++)
+	{
+		for (int toProcess = fromProcess + 1; toProcess < numberOfProcesses; toProcess++)
+		{
 
-  PipesList *procPipes = malloc(procCount * sizeof(PipesList));
-  for (int i = 0; i < procCount; i++) {
-    procPipes[i].pipes = malloc(procCount * sizeof(PipeDesc));
-    procPipes[i].count = procCount;
-  }
+			pipe(inFD);
+			pipe(outFD);
 
-  int n = 0;
-  int k = n + 1;
-  int inFD[2], outFD[2];
-  for (int i = 0; i < pipesCount; i++) {
 
-    if (pipe2(inFD, O_NONBLOCK) < 0 || pipe2(outFD, O_NONBLOCK) < 0)
-      error("child pipe call error");
+			processes[toProcess].pipes[fromProcess].in = outFD[0];
+			processes[toProcess].pipes[fromProcess].out = inFD[1];
+			processes[fromProcess].pipes[toProcess].in = inFD[0];
+			processes[fromProcess].pipes[toProcess].out = outFD[1];
 
-    // 0 - read
-    // 1 - write
-    procPipes[n].pipes[k].in = inFD[0];
-    procPipes[n].pipes[k].out = outFD[1];
-    procPipes[k].pipes[n].in = outFD[0];
-    procPipes[k].pipes[n].out = inFD[1];
-
-    fprintf(pInfo->LoggingFile, LogPipeOpenFmt, (unsigned)time(NULL), n, k,
-            outFD[0], outFD[1]);
-    fprintf(pInfo->LoggingFile, LogPipeOpenFmt, (unsigned)time(NULL), k, n,
-            inFD[0], inFD[1]);
-
-    k++;
-
-    if (k >= procCount) {
-      n++;
-      k = n + 1;
-    }
-  }
-
-  for (int i = 0; i < procCount; i++) {
-    procPipes[i].pipes[i].in = -1;
-    procPipes[i].pipes[i].out = -1;
-  }
-
-  return procPipes;
+			fprintf(pInfo->LoggingFile, PipeOpenFmtLog, (unsigned)time(NULL), fromProcess, toProcess, outFD[0], outFD[1]);
+			fprintf(pInfo->LoggingFile, PipeOpenFmtLog, (unsigned)time(NULL), toProcess, fromProcess, inFD[0], inFD[1]);
+		}
+	}
 }
 
-void letsFork(Process *pInfo, int *initBalances, PipesList *pl) {
+void letsFork(Process *pInfo, int *initBalances, ArrayOfPipes *pl) {
 
   pid_t pid;
-  for (local_id i = 1; i < pInfo->pipesList->count; i++) {
+  for (local_id i = 1; i < pInfo->arrayOfPipes->count; i++) {
     // printf("loop iteration %d\n", i);
     pid = fork();
     if (pid == 0) {
       Process childPorc = {
           .id = i,
-          .pipesList = &pl[i],
-          .curBalance = initBalances[i - 1],
+          .arrayOfPipes = &pl[i],
+          .currentBalance = initBalances[i - 1],
           .EventsLoggingFile = pInfo->EventsLoggingFile,
           .LoggingFile = pInfo->LoggingFile,
       };
@@ -188,55 +165,65 @@ int main(int argc, char *argv[])
 	for (int i = 0; i < numberOfBalances; i++)
 		startingBalances[i] = atoi(argv[firstBalanceIndex + i]);
 
-	FILE *EventsLoggingFile = fopen(events_log, "a");
-	FILE *LoggingFile = fopen(pipes_log, "a");
-
-	Process parentProc = 
+	Process parentProcess = 
 	{
 		.id = PARENT_ID,
 		.EventsLoggingFile = fopen(events_log, "a"),
 		.LoggingFile = fopen(pipes_log, "a"),
 	};
 
-  PipesList *procPipes = createPipes(&parentProc, numberOfProcesses);
-  parentProc.pipesList = &procPipes[0];
+	int numberOfPipes = 0;
+	for (int i = 1; i < numberOfProcesses; i++)
+		numberOfPipes += i;
 
-  letsFork(&parentProc, startingBalances, procPipes);
+	ArrayOfPipes *processes = malloc(numberOfProcesses * sizeof(ArrayOfPipes));
 
-  closeUnsuedPipes(&parentProc, procPipes);
+	for (int i = 0; i < numberOfProcesses; i++)
+	{
+		processes[i].count = numberOfProcesses;
+		processes[i].pipes = malloc(numberOfProcesses * sizeof(PipeDescriptor));
+	}
+
+	createPipes(processes, numberOfProcesses);
+	
+	parentProcess.arrayOfPipes = &processes[0];
+
+  letsFork(&parentProcess, startingBalances, procPipes);
+
+  closeUnsuedPipes(&parentProcess, procPipes);
 
   // printf("child count is %d\n", chldCount);
-  if (receiveAll(&parentProc, numberOfChildren, STARTED, NULL, NULL) == -1)
+  if (receiveAll(&parentProcess, numberOfChildren, STARTED, NULL, NULL) == -1)
         error("receiveAll error");
-   writeLog (parentProc.EventsLoggingFile, log_received_all_started_fmt,
-   get_physical_time(), parentProc.id);
+   writeLog (parentProcess.EventsLoggingFile, log_received_all_started_fmt,
+   get_physical_time(), parentProcess.id);
 
   // printf("before robbery\n");
   // fflush(stdout);
-  bank_robbery(&parentProc, numberOfChildren);
+  bank_robbery(&parentProcess, numberOfChildren);
 //  if (receiveAll(&parentProc, chldCount, ACK, NULL, NULL))
 //    error("receiveAll error");
 
   const Message *msg = createMessage(NULL, 0, STOP, get_physical_time());
 
-  if (send_multicast(&parentProc, msg) == -1) {
+  if (send_multicast(&parentProcess, msg) == -1) {
     perror("send done error");
     return -1;
   }
   free((char *)msg);
 
-  if (receiveAll(&parentProc, numberOfChildren, DONE, NULL, NULL) == -1)
+  if (receiveAll(&parentProcess, numberOfChildren, DONE, NULL, NULL) == -1)
     error("receiveAll DONE error");
-   writeLog (parentProc.EventsLoggingFile, log_received_all_done_fmt,
-   get_physical_time(), parentProc.id);
+   writeLog (parentProcess.EventsLoggingFile, log_received_all_done_fmt,
+   get_physical_time(), parentProcess.id);
 
   AllHistory *aHistory = malloc(sizeof(AllHistory));
   aHistory->s_history_len = numberOfChildren;
-  if (receiveAll(&parentProc, numberOfChildren, BALANCE_HISTORY,
+  if (receiveAll(&parentProcess, numberOfChildren, BALANCE_HISTORY,
                         aHistory->s_history, saveHistory) == -1)
     error("receiveAll  BALANCE_HISTORY error");
 
-  printHistory(&parentProc, aHistory, numberOfChildren);
+  printHistory(&parentProcess, aHistory, numberOfChildren);
 
   int finished = 0;
   pid_t wpid;
@@ -245,10 +232,10 @@ int main(int argc, char *argv[])
   }
 
   free(aHistory);
-  closeUsedPipes(&parentProc);
+  closeUsedPipes(&parentProcess);
 
-  fclose(parentProc.LoggingFile);
-  fclose(parentProc.EventsLoggingFile);
+  fclose(parentProcess.LoggingFile);
+  fclose(parentProcess.EventsLoggingFile);
 
   exit(EXIT_SUCCESS);
 }
