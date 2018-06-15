@@ -2,7 +2,7 @@
 #include "header.h"
 
 
-void modifyHistory (ProcessInfo *pInfo, balance_t balance, timestamp_t curTime) {
+void modifyHistory (Process *pInfo, balance_t balance, timestamp_t curTime) {
   BalanceHistory *history = pInfo->history;
   timestamp_t lastTime;
   if (curTime != 0)
@@ -30,7 +30,7 @@ void modifyHistory (ProcessInfo *pInfo, balance_t balance, timestamp_t curTime) 
   pInfo->curBalance = balance;
 }
 
-int transferIn (TransferOrder *tOrder, ProcessInfo *pInfo, timestamp_t time) {
+int transferIn (TransferOrder *tOrder, Process *pInfo, timestamp_t time) {
   balance_t curBlnc = pInfo->curBalance + tOrder->s_amount;
   modifyHistory(pInfo, curBlnc, time);
   //printf ("len is %d\n", pInfo->history->s_history_len);
@@ -47,7 +47,7 @@ int transferIn (TransferOrder *tOrder, ProcessInfo *pInfo, timestamp_t time) {
   return 0;
 }
 
-int transferOut (Message *msg, ProcessInfo *pInfo, timestamp_t time) {
+int transferOut (Message *msg, Process *pInfo, timestamp_t time) {
   TransferOrder *tOrder = (TransferOrder *) msg->s_payload;
   balance_t curBlnc = pInfo->curBalance - tOrder->s_amount;
   modifyHistory(pInfo, curBlnc, time);
@@ -63,7 +63,7 @@ int transferOut (Message *msg, ProcessInfo *pInfo, timestamp_t time) {
 }
 
 
-int sendDone (ProcessInfo *pInfo, timestamp_t time) {
+int sendDone (Process *pInfo, timestamp_t time) {
   char messageDone[MAX_PAYLOAD_LEN];
   time = get_physical_time();
   int length = sprintf(messageDone, log_done_fmt, time, pInfo->id, pInfo->curBalance);
@@ -83,7 +83,7 @@ int sendDone (ProcessInfo *pInfo, timestamp_t time) {
   return 0;
 }
 
-int sendStart (ProcessInfo *pInfo, timestamp_t time) {
+int sendStart (Process *pInfo, timestamp_t time) {
   char messageStarted[MAX_PAYLOAD_LEN];
   time = get_physical_time();
   int length = sprintf(messageStarted, log_started_fmt, time, pInfo->id, pInfo->pid, pInfo->ppid, pInfo->curBalance);
@@ -104,7 +104,7 @@ int sendStart (ProcessInfo *pInfo, timestamp_t time) {
   return 0;
 }
 
-int sendBalanceHistory (ProcessInfo *pInfo, timestamp_t time) {
+int sendBalanceHistory (Process *pInfo, timestamp_t time) {
 
   size_t len = sizeof (local_id) + sizeof (uint8_t) + pInfo->history->s_history_len * sizeof (BalanceState);
   //size_t len = sizeof (BalanceHistory);
@@ -124,7 +124,7 @@ int sendBalanceHistory (ProcessInfo *pInfo, timestamp_t time) {
   return 0;
 }
 
-int child (ProcessInfo *pInfo) {
+int child (Process *pInfo) {
 
   pInfo->pid = getpid();
   pInfo->ppid = getppid();

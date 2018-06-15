@@ -68,7 +68,7 @@ void closeUsedPipes(Process *pInfo) {
   free(pInfo->arrayOfPipes->pipes);
 }
 
-void createPipes(Process *processes, int numberOfProcesses) 
+void createPipes(Process *process, int numberOfProcesses) 
 {
 	int inFD[2];
 	int outFD[2];
@@ -77,18 +77,16 @@ void createPipes(Process *processes, int numberOfProcesses)
 	{
 		for (int toProcess = fromProcess + 1; toProcess < numberOfProcesses; toProcess++)
 		{
-
 			pipe(inFD);
 			pipe(outFD);
 
+			process[toProcess].arrayOfPipes[fromProcess].in = outFD[0];
+			process[toProcess].arrayOfPipes[fromProcess].out = inFD[1];
+			process[fromProcess].arrayOfPipes[toProcess].in = inFD[0];
+			process[fromProcess].arrayOfPipes[toProcess].out = outFD[1];
 
-			processes[toProcess].pipes[fromProcess].in = outFD[0];
-			processes[toProcess].pipes[fromProcess].out = inFD[1];
-			processes[fromProcess].pipes[toProcess].in = inFD[0];
-			processes[fromProcess].pipes[toProcess].out = outFD[1];
-
-			fprintf(pInfo->LoggingFile, PipeOpenFmtLog, (unsigned)time(NULL), fromProcess, toProcess, outFD[0], outFD[1]);
-			fprintf(pInfo->LoggingFile, PipeOpenFmtLog, (unsigned)time(NULL), toProcess, fromProcess, inFD[0], inFD[1]);
+			fprintf(process->LoggingFile, PipeOpenFmtLog, (unsigned)time(NULL), fromProcess, toProcess, outFD[0], outFD[1]);
+			fprintf(process->LoggingFile, PipeOpenFmtLog, (unsigned)time(NULL), toProcess, fromProcess, inFD[0], inFD[1]);
 		}
 	}
 }
@@ -176,21 +174,21 @@ int main(int argc, char *argv[])
 	for (int i = 1; i < numberOfProcesses; i++)
 		numberOfPipes += i;
 
-	ArrayOfPipes *processes = malloc(numberOfProcesses * sizeof(ArrayOfPipes));
+	ArrayOfPipes *processesPipes = malloc(numberOfProcesses * sizeof(ArrayOfPipes));
 
 	for (int i = 0; i < numberOfProcesses; i++)
 	{
-		processes[i].count = numberOfProcesses;
-		processes[i].pipes = malloc(numberOfProcesses * sizeof(PipeDescriptor));
+		processesPipes[i].count = numberOfProcesses;
+		processesPipes[i].pipes = malloc(numberOfProcesses * sizeof(PipeDescriptor));
 	}
 
-	createPipes(processes, numberOfProcesses);
+	createPipes(&parentProc, numberOfProcesses);
 	
-	parentProcess.arrayOfPipes = &processes[0];
+	parentProcess.arrayOfPipes = &processesPipes[0];
 
-  letsFork(&parentProcess, startingBalances, procPipes);
+  letsFork(&parentProcess, startingBalances, processesPipes);
 
-  closeUnsuedPipes(&parentProcess, procPipes);
+  closeUnsuedPipes(&parentProcess, processesPipes);
 
   // printf("child count is %d\n", chldCount);
   if (receiveAll(&parentProcess, numberOfChildren, STARTED, NULL, NULL) == -1)
