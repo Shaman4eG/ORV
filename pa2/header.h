@@ -45,12 +45,12 @@ typedef struct {
 
 typedef void (*handlerForBuffer) (void *buffer, Message *msg, int rcv);
 
-void writeLog (FILE *stream, const char *fmt, ...);
+void closeUsedPipes(Process *childProcess);
+void closeUnusedPipes(ArrayOfPipes *processesPipes, Process *parentProcess);
+void saveToLog (FILE *stream, const char *fmt, ...);
 void error (const char *msg);
 int child (Process *pInfo);
 int receiveAll (Process *pi, int count, MessageType type, void *buff, handlerForBuffer bHandler);
-void closeUsedPipes (Process *pInfo);
-void closeUnusedPipes (Process *pInfo, ArrayOfPipes *cp);
 Message *createMessage (const char *payload, int payloadLength, MessageType type, timestamp_t time);
 
 
