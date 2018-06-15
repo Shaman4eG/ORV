@@ -56,7 +56,7 @@ void closeUsedPipesIn(int j, Process *childProcess)
 {
 	if (childProcess->arrayOfPipes->pipes[j].in != -1)
 	{
-		if (close(processes->pipes[j].in) == -1)
+		if (close(childProcess->arrayOfPipes->pipes[j].in) == -1)
 			fprintf(childProcess->LoggingFile, UsedPipeReadErrorCloseFmtLog, 
 			(unsigned)time(NULL), j, childProcess->arrayOfPipes->pipes[j].in, childProcess->id, strerror(errno));
 		else
@@ -69,7 +69,7 @@ void closeUsedPipesOut(int j, Process *childProcess)
 {
 	if (childProcess->arrayOfPipes->pipes[j].out != -1)
 	{
-		if (close(processes->pipes[j].out) == -1)
+		if (close(childProcess->arrayOfPipes->pipes[j].out) == -1)
 			fprintf(childProcess->LoggingFile, UsedPipeWriteErrorCloseFmtLog,
 			(unsigned)time(NULL), j, childProcess->arrayOfPipes->pipes[j].out, childProcess->id, strerror(errno));
 		else
@@ -112,7 +112,7 @@ void createPipes(ArrayOfPipes *processesPipes, Process *parentProcess, int numbe
 	}
 }
 
-void doForks(ArrayOfPipes *processesPipes, Process *parentProcess, int startingBalances)
+void doForks(ArrayOfPipes *processesPipes, Process *parentProcess, int *startingBalances)
 {
 	pid_t pid;
 	for (int i = 1; i < parentProcess->arrayOfPipes->count; i++)
@@ -138,7 +138,7 @@ void doForks(ArrayOfPipes *processesPipes, Process *parentProcess, int startingB
 	}
 }
 
-void doForkWithExtra(ArrayOfPipes *processesPipes, Process *parentProcess, int startingBalances)
+void doForkWithExtra(ArrayOfPipes *processesPipes, Process *parentProcess, int *startingBalances)
 {
 	doForks(processesPipes, parentProcess, startingBalances);
 	closeUnusedPipes(processesPipes, parentProcess);
