@@ -51,22 +51,22 @@ int sendStart (ProcessInfo *pInfo, timestamp_t time)
 	return 0;
 }
 
-int loopPrint(ProcessInfo *pi) 
+int loopPrint(ProcessInfo *pInfo) 
 {
-	if (pi->isMutex)
-		request_cs(pi);
+	if (pInfo->isMutex)
+		request_cs(pInfo);
 
 	char buf[MAX_LOOP_STR];
-	uint8_t loopCount = pi->id * 5;
+	uint8_t loopCount = pInfo->id * 5;
 
 	for ( uint8_t i = 1; i <= loopCount; i++ ) 
 	{
-		snprintf (buf, sizeof buf, log_loop_operation_fmt, pi->id, i, loopCount);
+		snprintf (buf, sizeof buf, log_loop_operation_fmt, pInfo->id, i, loopCount);
 		print (buf);
 	}
 
-	if (pi->isMutex)
-		release_cs(pi);
+	if (pInfo->isMutex)
+		release_cs(pInfo);
 
 	return 0;
 }
@@ -104,6 +104,7 @@ int child (ProcessInfo *pInfo)
 				pInfo->workers--;
 			}
 	}
+
 	writeLog(pInfo->fEventsLog, log_received_all_done_fmt, get_lamport_time(), pInfo->id);
 	return 0;
 }
