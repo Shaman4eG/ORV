@@ -146,13 +146,13 @@ void doForkWithExtra(ArrayOfPipes *processesPipes, Process *parentProcess, int *
 
 void recieveAllAndLog(Process* parentProcess, int numberOfChildren)
 {
-	receiveAll(parentProcess, numberOfChildren, STARTED, NULL, NULL)
+	receiveAll(parentProcess, numberOfChildren, STARTED, NULL, NULL);
 	saveToLog(parentProcess->EventsLoggingFile, log_received_all_started_fmt, get_physical_time(), parentProcess->id);
 	bank_robbery(parentProcess, numberOfChildren);
 	Message *message = createMessage(NULL, 0, STOP, get_physical_time());
-	send_multicast(parentProcess, message)
+	send_multicast(parentProcess, message);
 	free((char *)message);
-	receiveAll(parentProcess, numberOfChildren, DONE, NULL, NULL)
+	receiveAll(parentProcess, numberOfChildren, DONE, NULL, NULL);
 	saveToLog(parentProcess->EventsLoggingFile, log_received_all_done_fmt, get_physical_time(), parentProcess->id);
 }
 
