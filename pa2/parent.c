@@ -77,8 +77,8 @@ void createPipes(ArrayOfPipes *processesPipes, Process *process, int numberOfPro
 	{
 		for (int toProcess = fromProcess + 1; toProcess < numberOfProcesses; toProcess++)
 		{
-			pipe(inFD);
-			pipe(outFD);
+			pipe2(inFD, O_NONBLOCK);
+			pipe2(outFD, O_NONBLOCK);
 
 			processesPipes[toProcess].pipes[fromProcess].in = outFD[0];
 			processesPipes[toProcess].pipes[fromProcess].out = inFD[1];
@@ -184,6 +184,12 @@ int main(int argc, char *argv[])
 
 	createPipes(processesPipes, &parentProcess, numberOfProcesses);
 	
+	for (int i = 0; i < numberOfProcesses; i++)
+	{
+		processes[i].pipes[i].out = -1;
+		processes[i].pipes[i].in = -1;
+	}
+
 	parentProcess.arrayOfPipes = &processesPipes[0];
 
   letsFork(&parentProcess, startingBalances, processesPipes);
