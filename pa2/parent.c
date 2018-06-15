@@ -68,7 +68,7 @@ void closeUsedPipes(Process *pInfo) {
   free(pInfo->arrayOfPipes->pipes);
 }
 
-void createPipes(Process *process, int numberOfProcesses) 
+void createPipes(ArrayOfPipes *processesPipes, Process *process, int numberOfProcesses)
 {
 	int inFD[2];
 	int outFD[2];
@@ -80,10 +80,10 @@ void createPipes(Process *process, int numberOfProcesses)
 			pipe(inFD);
 			pipe(outFD);
 
-			process[toProcess].arrayOfPipes[fromProcess].in = outFD[0];
-			process[toProcess].arrayOfPipes[fromProcess].out = inFD[1];
-			process[fromProcess].arrayOfPipes[toProcess].in = inFD[0];
-			process[fromProcess].arrayOfPipes[toProcess].out = outFD[1];
+			processesPipes[toProcess].pipes[fromProcess].in = outFD[0];
+			processesPipes[toProcess].pipes[fromProcess].out = inFD[1];
+			processesPipes[fromProcess].pipes[toProcess].in = inFD[0];
+			processesPipes[fromProcess].pipes[toProcess].out = outFD[1];
 
 			fprintf(process->LoggingFile, PipeOpenFmtLog, (unsigned)time(NULL), fromProcess, toProcess, outFD[0], outFD[1]);
 			fprintf(process->LoggingFile, PipeOpenFmtLog, (unsigned)time(NULL), toProcess, fromProcess, inFD[0], inFD[1]);
@@ -182,7 +182,7 @@ int main(int argc, char *argv[])
 		processesPipes[i].pipes = malloc(numberOfProcesses * sizeof(PipeDescriptor));
 	}
 
-	createPipes(&parentProc, numberOfProcesses);
+	createPipes(processesPipes, &parentProcess, numberOfProcesses);
 	
 	parentProcess.arrayOfPipes = &processesPipes[0];
 
